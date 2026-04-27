@@ -19,12 +19,15 @@ Rails.application.routes.draw do
         post 'generate_rent', on: :member
         resources :units, only: [:index, :create] do
           resources :rent_records, only: [:index, :create]
+          resources :maintenance_logs, only: [:index, :create]
         end
       end
       resources :units, only: [:show, :update, :destroy] do
         resources :rent_records, only: [:index, :create]
+        resources :maintenance_logs, only: [:index, :create]
       end
       resources :rent_records, only: [:show, :update, :destroy]
+      resources :maintenance_logs, only: [:show, :update, :destroy]
     end
   end
 end

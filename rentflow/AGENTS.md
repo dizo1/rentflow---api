@@ -34,4 +34,12 @@ POST   /api/v1/units/:unit_id/rent_records                           -> create
 GET    /api/v1/rent_records/:id                                      -> show
 PUT    /api/v1/rent_records/:id                                      -> update
 DELETE /api/v1/rent_records/:id                                      -> destroy
+
+GET    /api/v1/properties/:property_id/units/:unit_id/maintenance_logs  -> index
+POST   /api/v1/properties/:property_id/units/:unit_id/maintenance_logs  -> create
+GET    /api/v1/units/:unit_id/maintenance_logs                        -> index
+POST   /api/v1/units/:unit_id/maintenance_logs                        -> create
+GET    /api/v1/maintenance_logs/:id                                   -> show
+PUT    /api/v1/maintenance_logs/:id                                   -> update
+DELETE /api/v1/maintenance_logs/:id                                   -> destroy
 ```
