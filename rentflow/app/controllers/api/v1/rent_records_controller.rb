@@ -64,7 +64,11 @@ class Api::V1::RentRecordsController < Api::V1::BaseController
 
   def set_unit
     if params[:unit_id]
-      @unit = Unit.find(params[:unit_id])
+      if admin_user?
+        @unit = Unit.find(params[:unit_id])
+      else
+        @unit = Unit.joins(:property).where(properties: { user_id: current_user.id }).find(params[:unit_id])
+      end
     elsif params[:id] && !@rent_record
       set_rent_record
       @unit = @rent_record.unit
