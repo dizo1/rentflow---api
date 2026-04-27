@@ -50,7 +50,11 @@ class Api::V1::UnitsController < Api::V1::BaseController
   private
 
   def set_property
-    @property = Property.find(params[:property_id])
+    if admin_user?
+      @property = Property.find(params[:property_id])
+    else
+      @property = Property.where(user_id: current_user.id).find(params[:property_id])
+    end
   rescue ActiveRecord::RecordNotFound
     render_not_found('Property not found')
   end
