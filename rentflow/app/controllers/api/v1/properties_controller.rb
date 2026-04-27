@@ -9,17 +9,17 @@ class Api::V1::PropertiesController < Api::V1::BaseController
     else
       properties = Property.where(user_id: current_user.id)
     end
-    render_success(properties.as_json(only: [:id, :name, :address, :property_type, :status, :total_units, :user_id]), 'Properties retrieved successfully')
+    render_success(properties.as_json(only: [:id, :name, :address, :property_type, :status, :property_status, :total_units, :user_id]), 'Properties retrieved successfully')
   end
 
   def show
-    render_success(@property.as_json(only: [:id, :name, :address, :property_type, :status, :total_units, :user_id]), 'Property retrieved successfully')
+    render_success(@property.as_json(only: [:id, :name, :address, :property_type, :status, :property_status, :total_units, :user_id]), 'Property retrieved successfully')
   end
 
   def create
     property = Property.new(property_params)
     if property.save
-      render_success(property.as_json(only: [:id, :name, :address, :property_type, :status, :total_units, :user_id]), 'Property created successfully', :created)
+      render_success(property.as_json(only: [:id, :name, :address, :property_type, :status, :property_status, :total_units, :user_id]), 'Property created successfully', :created)
     else
       render_error('Validation failed', :unprocessable_content, property.errors.full_messages)
     end
@@ -27,7 +27,7 @@ class Api::V1::PropertiesController < Api::V1::BaseController
 
   def update
     if @property.update(property_params)
-      render_success(@property.as_json(only: [:id, :name, :address, :property_type, :status, :total_units, :user_id]), 'Property updated successfully')
+      render_success(@property.as_json(only: [:id, :name, :address, :property_type, :status, :property_status, :total_units, :user_id]), 'Property updated successfully')
     else
       render_error('Update failed', :unprocessable_content, @property.errors.full_messages)
     end
@@ -73,6 +73,6 @@ class Api::V1::PropertiesController < Api::V1::BaseController
   end
 
   def property_params
-    params.require(:property).permit(:name, :address, :property_type, :status, :total_units, :user_id)
+    params.require(:property).permit(:name, :address, :property_type, :status, :property_status, :total_units, :user_id)
   end
 end

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_27_134748) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_27_140124) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -30,6 +30,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_27_134748) do
     t.string "address"
     t.datetime "created_at", null: false
     t.string "name"
+    t.string "property_status", default: "pending", null: false
     t.string "property_type"
     t.string "status"
     t.integer "total_units"

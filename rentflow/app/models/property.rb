@@ -4,14 +4,21 @@ class Property < ApplicationRecord
 
   enum(:property_type, { rentals: 'rentals', apartment: 'apartment', house: 'house', commercial: 'commercial' })
   enum(:status, { occupied: 'occupied', vacant: 'vacant' })
+  enum(:property_status, { pending: 'pending', in_progress: 'in_progress', resolved: 'resolved', cancelled: 'cancelled' }, validate: true)
 
   validates :name, presence: true
   validates :property_type, presence: true
   validates :address, presence: true
   validates :status, presence: true
+  validates :property_status, presence: true
   validates :total_units, presence: true,
                           numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validate :total_units_matches_actual_units, on: :update
+
+  scope :pending, -> { where(property_status: 'pending') }
+  scope :in_progress, -> { where(property_status: 'in_progress') }
+  scope :resolved, -> { where(property_status: 'resolved') }
+  scope :cancelled, -> { where(property_status: 'cancelled') }
 
   # Generate rent records for all units for a given month and year
   def generate_monthly_rent(month: Date.current.month, year: Date.current.year, due_day: 1)
@@ -59,6 +66,7 @@ class Property < ApplicationRecord
       address: address,
       property_type: property_type,
       status: status,
+      property_status: property_status,
       total_units: total_units,
       units_count: units.count,
       occupied_units: units.where(occupancy_status: 'occupied').count,
