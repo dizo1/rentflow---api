@@ -16,6 +16,7 @@ Rails.application.routes.draw do
       get 'profile', to: 'users#profile'
       resources :users, only: [:index, :show, :update, :destroy]
       resources :properties, only: [:index, :show, :create, :update, :destroy] do
+        post 'generate_rent', on: :member
         resources :units, only: [:index, :create] do
           resources :rent_records, only: [:index, :create]
         end

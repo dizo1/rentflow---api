@@ -13,6 +13,44 @@ class Property < ApplicationRecord
                           numericality: { only_integer: true, greater_than_or_equal_to: 0 }
   validate :total_units_matches_actual_units, on: :update
 
+  # Generate rent records for all units for a given month and year
+  def generate_monthly_rent(month: Date.current.month, year: Date.current.year, due_day: 1)
+    raise ArgumentError, 'Month must be 1-12' unless (1..12).cover?(month)
+    raise ArgumentError, 'Year must be >= 2000' unless year >= 2000
+
+    due_date = Date.new(year, month, due_day)
+    generated_count = 0
+    skipped_count = 0
+
+    units.occupied.find_each do |unit|
+      # Skip if a rent record already exists for this unit/month/year
+      existing = unit.rent_records.where(month: month, year: year).exists?
+      if existing
+        skipped_count += 1
+        next
+      end
+
+      rent_record = unit.rent_records.build(
+        amount_due: unit.rent_amount,
+        amount_paid: 0,
+        balance: unit.rent_amount,
+        due_date: due_date,
+        status: 'pending',
+        month: month,
+        year: year
+      )
+
+      if rent_record.save
+        generated_count += 1
+      else
+        skipped_count += 1
+        Rails.logger.warn "Failed to generate rent record for unit #{unit.id}: #{rent_record.errors.full_messages.join(', ')}"
+      end
+    end
+
+    { generated: generated_count, skipped: skipped_count, total: generated_count + skipped_count }
+  end
+
   # Dashboard hook - returns property-level metrics
   def dashboard_data
     {

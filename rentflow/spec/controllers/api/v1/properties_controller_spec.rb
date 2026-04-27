@@ -58,12 +58,12 @@ RSpec.describe Api::V1::PropertiesController, type: :controller do
       expect(response).to have_http_status(:ok)
     end
 
-    it 'forbids access for other users' do
+    it 'returns not found for other users property' do
       other_user = User.create(email: 'other@example.com', password: 'password123')
       other_token = other_user.generate_jwt
       request.headers['Authorization'] = "Bearer #{other_token}"
       get :show, params: { id: property.id }
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
 
     it 'returns not found for non-existent property' do
@@ -88,12 +88,12 @@ RSpec.describe Api::V1::PropertiesController, type: :controller do
       expect(property.reload.name).to eq('Admin Updated')
     end
 
-    it 'forbids update by other users' do
+    it 'returns not found for other users property' do
       other_user = User.create(email: 'other@example.com', password: 'password123')
       other_token = other_user.generate_jwt
       request.headers['Authorization'] = "Bearer #{other_token}"
       put :update, params: { id: property.id, property: { name: 'Hacked' } }
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
   end
 
@@ -112,12 +112,12 @@ RSpec.describe Api::V1::PropertiesController, type: :controller do
       expect(response).to have_http_status(:no_content)
     end
 
-    it 'forbids delete by other users' do
+    it 'returns not found for other users property' do
       other_user = User.create(email: 'other@example.com', password: 'password123')
       other_token = other_user.generate_jwt
       request.headers['Authorization'] = "Bearer #{other_token}"
       delete :destroy, params: { id: property.id }
-      expect(response).to have_http_status(:forbidden)
+      expect(response).to have_http_status(:not_found)
     end
   end
 end

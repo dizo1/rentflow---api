@@ -26,6 +26,28 @@ class Unit < ApplicationRecord
     record&.status == 'paid'
   end
 
+  # Generate a rent record for this unit for a specific month/year
+  def generate_rent_record(month: Date.current.month, year: Date.current.year, due_day: 1)
+    raise ArgumentError, 'Month must be 1-12' unless (1..12).cover?(month)
+    raise ArgumentError, 'Year must be >= 2000' unless year >= 2000
+
+    # Check if already exists
+    existing = rent_records.where(month: month, year: year).first
+    return existing if existing
+
+    due_date = Date.new(year, month, due_day)
+
+    rent_records.create(
+      amount_due: rent_amount,
+      amount_paid: 0,
+      balance: rent_amount,
+      due_date: due_date,
+      status: 'pending',
+      month: month,
+      year: year
+    )
+  end
+
   private
 
   def rent_amount_should_be_positive

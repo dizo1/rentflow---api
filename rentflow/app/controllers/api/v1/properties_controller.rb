@@ -1,7 +1,7 @@
 class Api::V1::PropertiesController < Api::V1::BaseController
   before_action :require_admin, only: [:index, :create]
-  before_action :set_property, only: [:show, :update, :destroy]
-  before_action :authorize_property, only: [:show, :update, :destroy]
+  before_action :set_property, only: [:show, :update, :destroy, :generate_rent]
+  before_action :authorize_property, only: [:show, :update, :destroy, :generate_rent]
 
   def index
     if admin_user?
@@ -38,10 +38,28 @@ class Api::V1::PropertiesController < Api::V1::BaseController
     render_success(nil, 'Property deleted successfully', :no_content)
   end
 
+  def generate_rent
+    month = (params[:month] || Date.current.month).to_i
+    year = (params[:year] || Date.current.year).to_i
+    due_day = (params[:due_day] || 1).to_i
+
+    result = @property.generate_monthly_rent(month: month, year: year, due_day: due_day)
+
+    render_success(
+      result,
+      "Rent generation complete: #{result[:generated]} records created, #{result[:skipped]} skipped (already exist)",
+      :ok
+    )
+  end
+
   private
 
   def set_property
-    @property = Property.find(params[:id])
+    if admin_user?
+      @property = Property.find(params[:id])
+    else
+      @property = Property.where(user_id: current_user.id).find(params[:id])
+    end
   rescue ActiveRecord::RecordNotFound
     render_not_found('Property not found')
   end
