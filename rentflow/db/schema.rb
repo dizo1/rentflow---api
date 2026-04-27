@@ -10,9 +10,21 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_27_095921) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_27_134748) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "maintenance_logs", force: :cascade do |t|
+    t.decimal "cost"
+    t.datetime "created_at", null: false
+    t.text "description"
+    t.datetime "resolved_at"
+    t.string "status"
+    t.string "title"
+    t.bigint "unit_id", null: false
+    t.datetime "updated_at", null: false
+    t.index ["unit_id"], name: "index_maintenance_logs_on_unit_id"
+  end
 
   create_table "properties", force: :cascade do |t|
     t.string "address"
@@ -63,6 +75,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_27_095921) do
     t.datetime "updated_at", null: false
   end
 
+  add_foreign_key "maintenance_logs", "units"
   add_foreign_key "properties", "users"
   add_foreign_key "rent_records", "units"
   add_foreign_key "units", "properties"

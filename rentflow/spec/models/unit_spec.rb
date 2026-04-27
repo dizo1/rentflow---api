@@ -107,6 +107,11 @@ RSpec.describe Unit, type: :model do
       expect(association.macro).to eq(:has_many)
     end
 
+    it 'has many maintenance_logs' do
+      association = described_class.reflect_on_association(:maintenance_logs)
+      expect(association.macro).to eq(:has_many)
+    end
+
     it 'destroys associated rent_records when destroyed' do
       unit = property.units.create(
         unit_number: '101',
@@ -126,6 +131,24 @@ RSpec.describe Unit, type: :model do
         year: 2024
       )
       expect { unit.destroy }.to change { RentRecord.count }.by(-1)
+    end
+
+    it 'destroys associated maintenance_logs when destroyed' do
+      unit = property.units.create(
+        unit_number: '101',
+        rent_amount: 1200.00,
+        deposit_amount: 2400.00,
+        occupancy_status: 'occupied',
+        tenant_name: 'John Doe',
+        tenant_phone: '555-1234'
+      )
+      unit.maintenance_logs.create(
+        title: 'Fix leak',
+        description: 'Kitchen sink leaking',
+        cost: 150.00,
+        status: 'pending'
+      )
+      expect { unit.destroy }.to change { MaintenanceLog.count }.by(-1)
     end
   end
 
@@ -246,6 +269,55 @@ RSpec.describe Unit, type: :model do
 
       it 'returns false when rent is not paid for given month and year' do
         expect(unit.rent_fully_paid_for?(month: 1.month.ago.month, year: 1.month.ago.year)).to be false
+      end
+    end
+  end
+
+  describe 'maintenance_logs helpers' do
+    let!(:unit) do
+      property.units.create(
+        unit_number: '101',
+        rent_amount: 1200.00,
+        deposit_amount: 2400.00,
+        occupancy_status: 'occupied',
+        tenant_name: 'John Doe',
+        tenant_phone: '555-1234'
+      )
+    end
+    let!(:pending_log) do
+      unit.maintenance_logs.create(
+        title: 'Fix leak',
+        description: 'Kitchen sink leaking',
+        cost: 150.00,
+        status: 'pending'
+      )
+    end
+    let!(:in_progress_log) do
+      unit.maintenance_logs.create(
+        title: 'Paint walls',
+        description: 'Living room needs painting',
+        cost: 300.00,
+        status: 'in_progress'
+      )
+    end
+    let!(:resolved_log) do
+      unit.maintenance_logs.create(
+        title: 'Replace filter',
+        description: 'HVAC filter replacement',
+        cost: 50.00,
+        status: 'resolved'
+      )
+    end
+
+    describe '#open_maintenance_logs' do
+      it 'returns only pending and in_progress maintenance logs' do
+        expect(unit.open_maintenance_logs).to match_array([pending_log, in_progress_log])
+      end
+    end
+
+    describe '#resolved_maintenance_logs' do
+      it 'returns only resolved maintenance logs' do
+        expect(unit.resolved_maintenance_logs).to match_array([resolved_log])
       end
     end
   end

@@ -1,6 +1,7 @@
 class Unit < ApplicationRecord
   belongs_to :property
   has_many :rent_records, dependent: :destroy
+  has_many :maintenance_logs, dependent: :destroy
 
   enum :occupancy_status, { occupied: 'occupied', vacant: 'vacant' }, validate: true
 
@@ -24,6 +25,14 @@ class Unit < ApplicationRecord
   def rent_fully_paid_for?(month:, year:)
     record = rent_records.find_by(month: month, year: year)
     record&.status == 'paid'
+  end
+
+  def open_maintenance_logs
+    maintenance_logs.where(status: ['pending', 'in_progress'])
+  end
+
+  def resolved_maintenance_logs
+    maintenance_logs.where(status: 'resolved')
   end
 
   # Generate a rent record for this unit for a specific month/year
