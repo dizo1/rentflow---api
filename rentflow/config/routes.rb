@@ -16,9 +16,14 @@ Rails.application.routes.draw do
       get 'profile', to: 'users#profile'
       resources :users, only: [:index, :show, :update, :destroy]
       resources :properties, only: [:index, :show, :create, :update, :destroy] do
-        resources :units, only: [:index, :create]
+        resources :units, only: [:index, :create] do
+          resources :rent_records, only: [:index, :create]
+        end
       end
-      resources :units, only: [:show, :update, :destroy]
+      resources :units, only: [:show, :update, :destroy] do
+        resources :rent_records, only: [:index, :create]
+      end
+      resources :rent_records, only: [:show, :update, :destroy]
     end
   end
 end

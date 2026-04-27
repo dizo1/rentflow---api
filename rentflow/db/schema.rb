@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_27_070001) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_27_095921) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -24,6 +24,21 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_27_070001) do
     t.datetime "updated_at", null: false
     t.bigint "user_id", null: false
     t.index ["user_id"], name: "index_properties_on_user_id"
+  end
+
+  create_table "rent_records", force: :cascade do |t|
+    t.decimal "amount_due"
+    t.decimal "amount_paid"
+    t.decimal "balance"
+    t.datetime "created_at", null: false
+    t.date "due_date"
+    t.integer "month"
+    t.datetime "paid_at"
+    t.string "status"
+    t.bigint "unit_id", null: false
+    t.datetime "updated_at", null: false
+    t.integer "year"
+    t.index ["unit_id"], name: "index_rent_records_on_unit_id"
   end
 
   create_table "units", force: :cascade do |t|
@@ -49,5 +64,6 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_27_070001) do
   end
 
   add_foreign_key "properties", "users"
+  add_foreign_key "rent_records", "units"
   add_foreign_key "units", "properties"
 end
