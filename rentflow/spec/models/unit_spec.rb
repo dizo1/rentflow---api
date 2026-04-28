@@ -141,21 +141,23 @@ RSpec.describe Unit, type: :model do
       expect { unit.destroy }.to change { RentRecord.count }.by(-1)
     end
 
-    it 'destroys associated maintenance_logs when destroyed' do
-      unit = property.units.create(
-        unit_number: '101',
-        rent_amount: 1200.00,
-        deposit_amount: 2400.00,
-        occupancy_status: 'occupied'
-      )
-      unit.maintenance_logs.create(
-        title: 'Fix leak',
-        description: 'Kitchen sink leaking',
-        cost: 150.00,
-        status: 'pending'
-      )
-      expect { unit.destroy }.to change { MaintenanceLog.count }.by(-1)
-    end
+     it 'destroys associated maintenance_logs when destroyed' do
+       unit = property.units.create(
+         unit_number: '101',
+         rent_amount: 1200.00,
+         deposit_amount: 2400.00,
+         occupancy_status: 'occupied'
+       )
+       unit.maintenance_logs.create(
+         title: 'Fix leak',
+         description: 'Kitchen sink leaking',
+         cost: 150.00,
+         status: 'pending',
+         priority: 'medium',
+         reported_date: Date.current
+       )
+       expect { unit.destroy }.to change { MaintenanceLog.count }.by(-1)
+     end
   end
 
   describe 'validations' do
@@ -283,7 +285,9 @@ RSpec.describe Unit, type: :model do
         title: 'Fix leak',
         description: 'Kitchen sink leaking',
         cost: 150.00,
-        status: 'pending'
+        status: 'pending',
+        priority: 'medium',
+        reported_date: Date.current
       )
     end
     let!(:in_progress_log) do
@@ -291,7 +295,9 @@ RSpec.describe Unit, type: :model do
         title: 'Paint walls',
         description: 'Living room needs painting',
         cost: 300.00,
-        status: 'in_progress'
+        status: 'in_progress',
+        priority: 'medium',
+        reported_date: Date.current
       )
     end
     let!(:resolved_log) do
@@ -299,7 +305,9 @@ RSpec.describe Unit, type: :model do
         title: 'Replace filter',
         description: 'HVAC filter replacement',
         cost: 50.00,
-        status: 'resolved'
+        status: 'resolved',
+        priority: 'medium',
+        reported_date: Date.current
       )
     end
 

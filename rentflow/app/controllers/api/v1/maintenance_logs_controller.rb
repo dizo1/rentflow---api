@@ -1,17 +1,15 @@
 class Api::V1::MaintenanceLogsController < Api::V1::BaseController
   before_action :set_unit, only: [:index, :create]
-  before_action :set_maintenance_log, only: [:show, :update, :destroy]
-  before_action :authorize_maintenance_log, only: [:show, :update, :destroy]
+  before_action :set_maintenance_log, only: [:show, :update, :destroy, :resolve]
+  before_action :authorize_maintenance_log, only: [:show, :update, :destroy, :resolve]
 
   # GET /api/v1/units/:unit_id/maintenance_logs
   def index
-    maintenance_logs = @unit.maintenance_logs.includes(:unit)
+    maintenance_logs = @unit.maintenance_logs
+
     render_success(
       maintenance_logs.as_json(
-        only: [:id, :unit_id, :title, :description, :cost, :status, :resolved_at],
-        include: {
-          unit: { only: [:id, :unit_number] }
-        }
+        only: [:id, :unit_id, :title, :description, :cost, :status, :priority, :reported_date, :resolved_at, :assigned_to, :notes, :created_at, :updated_at]
       ),
       'Maintenance logs retrieved successfully'
     )
@@ -21,10 +19,7 @@ class Api::V1::MaintenanceLogsController < Api::V1::BaseController
   def show
     render_success(
       @maintenance_log.as_json(
-        only: [:id, :unit_id, :title, :description, :cost, :status, :resolved_at],
-        include: {
-          unit: { only: [:id, :unit_number, :property_id] }
-        }
+        only: [:id, :unit_id, :title, :description, :cost, :status, :priority, :reported_date, :resolved_at, :assigned_to, :notes, :created_at, :updated_at]
       ),
       'Maintenance log retrieved successfully'
     )
@@ -36,10 +31,7 @@ class Api::V1::MaintenanceLogsController < Api::V1::BaseController
     if maintenance_log.save
       render_success(
         maintenance_log.as_json(
-          only: [:id, :unit_id, :title, :description, :cost, :status, :resolved_at],
-          include: {
-            unit: { only: [:id, :unit_number] }
-          }
+          only: [:id, :unit_id, :title, :description, :cost, :status, :priority, :reported_date, :resolved_at, :assigned_to, :notes, :created_at, :updated_at]
         ),
         'Maintenance log created successfully',
         :created
@@ -49,15 +41,12 @@ class Api::V1::MaintenanceLogsController < Api::V1::BaseController
     end
   end
 
-  # PUT /api/v1/maintenance_logs/:id
+  # PUT/PATCH /api/v1/maintenance_logs/:id
   def update
     if @maintenance_log.update(maintenance_log_params)
       render_success(
         @maintenance_log.as_json(
-          only: [:id, :unit_id, :title, :description, :cost, :status, :resolved_at],
-          include: {
-            unit: { only: [:id, :unit_number] }
-          }
+          only: [:id, :unit_id, :title, :description, :cost, :status, :priority, :reported_date, :resolved_at, :assigned_to, :notes, :created_at, :updated_at]
         ),
         'Maintenance log updated successfully'
       )
@@ -72,18 +61,30 @@ class Api::V1::MaintenanceLogsController < Api::V1::BaseController
     render_success(nil, 'Maintenance log deleted successfully', :no_content)
   end
 
+  # PATCH /api/v1/maintenance_logs/:id/resolve
+  # Convenience endpoint to mark maintenance as resolved
+  def resolve
+    if @maintenance_log.status == 'resolved'
+      return render_error('Already resolved', :unprocessable_content)
+    end
+
+    if @maintenance_log.mark_resolved!
+      render_success(
+        @maintenance_log.as_json(only: [:id, :status, :resolved_at]),
+        'Maintenance marked as resolved'
+      )
+    else
+      render_error('Failed to resolve', :unprocessable_content, @maintenance_log.errors.full_messages)
+    end
+  end
+
   private
 
   def set_unit
-    if params[:unit_id]
-      if admin_user?
-        @unit = Unit.find(params[:unit_id])
-      else
-        @unit = Unit.joins(:property).where(properties: { user_id: current_user.id }).find(params[:unit_id])
-      end
-    elsif params[:id] && !@maintenance_log
-      set_maintenance_log
-      @unit = @maintenance_log.unit
+    if admin_user?
+      @unit = Unit.find(params[:unit_id])
+    else
+      @unit = Unit.joins(:property).where(properties: { user_id: current_user.id }).find(params[:unit_id])
     end
   rescue ActiveRecord::RecordNotFound
     render_not_found('Unit not found')
@@ -100,6 +101,15 @@ class Api::V1::MaintenanceLogsController < Api::V1::BaseController
   end
 
   def maintenance_log_params
-    params.require(:maintenance_log).permit(:title, :description, :cost, :status)
+    params.require(:maintenance_log).permit(
+      :title,
+      :description,
+      :cost,
+      :status,
+      :priority,
+      :reported_date,
+      :assigned_to,
+      :notes
+    )
   end
 end

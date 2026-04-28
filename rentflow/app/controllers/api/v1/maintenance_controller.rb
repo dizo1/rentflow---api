@@ -16,7 +16,9 @@ class Api::V1::MaintenanceController < Api::V1::BaseController
     total_count = maintenance_logs.count
     render_success(
       {
-        maintenance_logs: maintenance_logs.as_json(only: [:id, :title, :description, :cost, :status, :resolved_at]),
+        maintenance_logs: maintenance_logs.as_json(
+          only: [:id, :title, :description, :cost, :status, :priority, :reported_date, :resolved_at, :assigned_to, :notes, :created_at, :updated_at]
+        ),
         total_count: total_count,
         pending_count: maintenance_logs.where(status: 'pending').count,
         in_progress_count: maintenance_logs.where(status: 'in_progress').count,
@@ -155,7 +157,16 @@ class Api::V1::MaintenanceController < Api::V1::BaseController
   end
 
   def maintenance_log_params
-    params.require(:maintenance_log).permit(:title, :description, :cost, :status)
+    params.require(:maintenance_log).permit(
+      :title,
+      :description,
+      :cost,
+      :status,
+      :priority,
+      :reported_date,
+      :assigned_to,
+      :notes
+    )
   end
 
   def maintenance_log_json(log)
@@ -165,7 +176,11 @@ class Api::V1::MaintenanceController < Api::V1::BaseController
       description: log.description,
       cost: log.cost,
       status: log.status,
+      priority: log.priority,
+      reported_date: log.reported_date,
       resolved_at: log.resolved_at,
+      assigned_to: log.assigned_to,
+      notes: log.notes,
       created_at: log.created_at,
       updated_at: log.updated_at,
       unit: {

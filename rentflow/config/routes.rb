@@ -29,7 +29,9 @@ Rails.application.routes.draw do
        resources :rent_records, only: [:show, :update, :destroy] do
          post 'record_payment', on: :member
        end
-       resources :maintenance_logs, only: [:show, :update, :destroy]
+       resources :maintenance_logs, only: [:show, :update, :destroy] do
+         patch :resolve, on: :member
+       end
 
        # Tenant management routes
        resources :tenants, only: [:index, :show, :update, :destroy]

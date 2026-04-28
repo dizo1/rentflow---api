@@ -8,13 +8,26 @@ RSpec.describe Api::V1::MaintenanceController, type: :controller do
   let!(:property) { Property.create(user: user, name: 'Test Property', address: '123 St', property_type: 'apartment', status: 'occupied', property_status: 'pending', total_units: 5) }
   let!(:unit) { property.units.create(unit_number: '101', rent_amount: 1000, deposit_amount: 2000, occupancy_status: 'occupied') }
 
+  let!(:tenant) do
+    Tenant.create!(
+      unit: unit,
+      full_name: 'John Doe',
+      phone: '555-1234',
+      email: 'john@example.com',
+      move_in_date: Date.current,
+      lease_start: Date.current,
+      lease_end: 1.year.from_now.to_date,
+      status: 'active'
+    )
+  end
+
   before do
     request.headers['Authorization'] = "Bearer #{user_token}"
   end
 
-  describe 'GET #dashboard' do
-    let!(:pending_log) { unit.maintenance_logs.create(title: 'Fix leak', description: 'Desc', cost: 100, status: 'pending') }
-    let!(:resolved_log) { unit.maintenance_logs.create(title: 'Paint wall', description: 'Desc', cost: 200, status: 'resolved') }
+   describe 'GET #dashboard' do
+     let!(:pending_log) { unit.maintenance_logs.create(title: 'Fix leak', description: 'Desc', cost: 100, status: 'pending', priority: 'medium', reported_date: Date.current) }
+     let!(:resolved_log) { unit.maintenance_logs.create(title: 'Paint wall', description: 'Desc', cost: 200, status: 'resolved', priority: 'medium', reported_date: Date.current) }
 
     it 'returns maintenance dashboard data for owner' do
       get :dashboard
@@ -47,27 +60,27 @@ RSpec.describe Api::V1::MaintenanceController, type: :controller do
     end
   end
 
-  describe 'GET #index (property maintenance logs)' do
-    let!(:pending_log) { unit.maintenance_logs.create(title: 'Fix leak', description: 'Desc', cost: 100, status: 'pending') }
-    let!(:resolved_log) { unit.maintenance_logs.create(title: 'Paint wall', description: 'Desc', cost: 200, status: 'resolved') }
+   describe 'GET #index (property maintenance logs)' do
+     let!(:pending_log) { unit.maintenance_logs.create(title: 'Fix leak', description: 'Desc', cost: 100, status: 'pending', priority: 'medium', reported_date: Date.current) }
+     let!(:resolved_log) { unit.maintenance_logs.create(title: 'Paint wall', description: 'Desc', cost: 200, status: 'resolved', priority: 'medium', reported_date: Date.current) }
 
-    it 'returns maintenance logs for property as owner' do
-      get :index, params: { property_id: property.id }
-      expect(response).to have_http_status(:ok)
-      json = JSON.parse(response.body)
-      expect(json['data'].length).to eq(2)
-      expect(json['meta']['total_count']).to eq(2)
-      expect(json['meta']['pending_count']).to eq(1)
-      expect(json['meta']['resolved_count']).to eq(1)
-    end
+     it 'returns maintenance logs for property as owner' do
+       get :index, params: { property_id: property.id }
+       expect(response).to have_http_status(:ok)
+       json = JSON.parse(response.body)
+       expect(json['data']['maintenance_logs'].length).to eq(2)
+       expect(json['data']['total_count']).to eq(2)
+       expect(json['data']['pending_count']).to eq(1)
+       expect(json['data']['resolved_count']).to eq(1)
+     end
 
-    it 'filters by status' do
-      get :index, params: { property_id: property.id, status: 'pending' }
-      expect(response).to have_http_status(:ok)
-      json = JSON.parse(response.body)
-      expect(json['data'].length).to eq(1)
-      expect(json['data'].first['status']).to eq('pending')
-    end
+     it 'filters by status' do
+       get :index, params: { property_id: property.id, status: 'pending' }
+       expect(response).to have_http_status(:ok)
+       json = JSON.parse(response.body)
+       expect(json['data']['maintenance_logs'].length).to eq(1)
+       expect(json['data']['maintenance_logs'].first['status']).to eq('pending')
+     end
 
     it 'returns error for invalid status filter' do
       get :index, params: { property_id: property.id, status: 'invalid' }
@@ -94,8 +107,8 @@ RSpec.describe Api::V1::MaintenanceController, type: :controller do
     end
   end
 
-  describe 'GET #show' do
-    let!(:maintenance_log) { unit.maintenance_logs.create(title: 'Fix leak', description: 'Kitchen sink leaking', cost: 150.50, status: 'pending') }
+   describe 'GET #show' do
+     let!(:maintenance_log) { unit.maintenance_logs.create(title: 'Fix leak', description: 'Kitchen sink leaking', cost: 150.50, status: 'pending', priority: 'medium', reported_date: Date.current) }
 
     it 'returns maintenance log for owner' do
       get :show, params: { id: maintenance_log.id }
@@ -207,8 +220,8 @@ RSpec.describe Api::V1::MaintenanceController, type: :controller do
     end
   end
 
-  describe 'PUT #update' do
-    let!(:maintenance_log) { unit.maintenance_logs.create(title: 'Fix leak', description: 'Desc', cost: 100, status: 'pending') }
+   describe 'PUT #update' do
+     let!(:maintenance_log) { unit.maintenance_logs.create(title: 'Fix leak', description: 'Desc', cost: 100, status: 'pending', priority: 'medium', reported_date: Date.current) }
 
     it 'updates maintenance log as owner' do
       put :update, params: {
@@ -255,8 +268,8 @@ RSpec.describe Api::V1::MaintenanceController, type: :controller do
     end
   end
 
-  describe 'PATCH #resolve' do
-    let!(:maintenance_log) { unit.maintenance_logs.create(title: 'Fix leak', description: 'Desc', cost: 100, status: 'in_progress') }
+   describe 'PATCH #resolve' do
+     let!(:maintenance_log) { unit.maintenance_logs.create(title: 'Fix leak', description: 'Desc', cost: 100, status: 'in_progress', priority: 'medium', reported_date: Date.current) }
 
     it 'marks maintenance log as resolved' do
       patch :resolve, params: { id: maintenance_log.id }
@@ -281,8 +294,8 @@ RSpec.describe Api::V1::MaintenanceController, type: :controller do
     end
   end
 
-  describe 'DELETE #destroy' do
-    let!(:maintenance_log) { unit.maintenance_logs.create(title: 'Test', description: 'Desc', cost: 100, status: 'pending') }
+   describe 'DELETE #destroy' do
+     let!(:maintenance_log) { unit.maintenance_logs.create(title: 'Test', description: 'Desc', cost: 100, status: 'pending', priority: 'medium', reported_date: Date.current) }
 
     it 'deletes maintenance log as owner' do
       expect {

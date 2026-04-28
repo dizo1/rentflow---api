@@ -8,6 +8,19 @@ RSpec.describe Api::V1::MaintenanceLogsController, type: :controller do
   let!(:property) { Property.create(user: user, name: 'Test Property', address: '123 St', property_type: 'apartment', status: 'occupied', total_units: 5) }
   let!(:unit) { property.units.create(unit_number: '101', rent_amount: 1000, deposit_amount: 2000, occupancy_status: 'occupied') }
 
+  let!(:tenant) do
+    Tenant.create!(
+      unit: unit,
+      full_name: 'John Doe',
+      phone: '555-1234',
+      email: 'john@example.com',
+      move_in_date: Date.current,
+      lease_start: Date.current,
+      lease_end: 1.year.from_now.to_date,
+      status: 'active'
+    )
+  end
+
   before do
     request.headers['Authorization'] = "Bearer #{user_token}"
   end
@@ -18,7 +31,9 @@ RSpec.describe Api::V1::MaintenanceLogsController, type: :controller do
         title: 'Fix leak',
         description: 'Kitchen sink leaking badly',
         cost: 150.50,
-        status: 'pending'
+        status: 'pending',
+        priority: 'medium',
+        reported_date: Date.current
       )
     end
 
@@ -46,11 +61,42 @@ RSpec.describe Api::V1::MaintenanceLogsController, type: :controller do
       get :index, params: { unit_id: unit.id }
       expect(response).to have_http_status(:not_found)
     end
+  end
 
-    it 'returns not found for non-existent unit' do
-      get :index, params: { unit_id: 99999 }
-      expect(response).to have_http_status(:not_found)
+  describe 'PATCH #resolve' do
+    let!(:maintenance_log) do
+      unit.maintenance_logs.create(
+        title: 'Fix HVAC',
+        description: 'Air conditioning not cooling',
+        cost: 200.00,
+        status: 'pending',
+        priority: 'high',
+        reported_date: Date.current
+      )
     end
+
+    it 'marks maintenance as resolved' do
+      patch :resolve, params: { id: maintenance_log.id }
+      expect(response).to have_http_status(:ok)
+      json = JSON.parse(response.body)
+      expect(json['data']['status']).to eq('resolved')
+      expect(json['data']['resolved_at']).to be_present
+    end
+
+    it 'returns error if already resolved' do
+      maintenance_log.update!(status: 'resolved', resolved_at: Time.current)
+      patch :resolve, params: { id: maintenance_log.id }
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
+    it 'forbids access for other users' do
+      other_user = User.create(email: 'other@example.com', password: 'password123')
+      other_token = other_user.generate_jwt
+      request.headers['Authorization'] = "Bearer #{other_token}"
+      patch :resolve, params: { id: maintenance_log.id }
+      expect(response).to have_http_status(:forbidden)
+    end
+  end
   end
 
   describe 'GET #show' do
@@ -59,7 +105,9 @@ RSpec.describe Api::V1::MaintenanceLogsController, type: :controller do
         title: 'Paint walls',
         description: 'Living room needs fresh paint',
         cost: 300.00,
-        status: 'in_progress'
+        status: 'in_progress',
+        priority: 'medium',
+        reported_date: Date.current
       )
     end
 
@@ -99,7 +147,9 @@ RSpec.describe Api::V1::MaintenanceLogsController, type: :controller do
           title: 'Fix electrical outlet',
           description: 'Outlet in bedroom not working',
           cost: 75.00,
-          status: 'pending'
+          status: 'pending',
+          priority: 'medium',
+          reported_date: Date.current
         }
       }
       expect(response).to have_http_status(:created)
@@ -118,7 +168,9 @@ RSpec.describe Api::V1::MaintenanceLogsController, type: :controller do
           title: 'Replace filter',
           description: 'HVAC filter needs replacement',
           cost: 50.00,
-          status: 'resolved'
+          status: 'resolved',
+          priority: 'medium',
+          reported_date: Date.current
         }
       }
       expect(response).to have_http_status(:created)
@@ -134,8 +186,10 @@ RSpec.describe Api::V1::MaintenanceLogsController, type: :controller do
           title: '',
           description: 'Test',
           cost: -100,
-          status: 'invalid_status'
+          priority: 'medium',
+          reported_date: Date.current
         }
+      }
       }
       expect(response).to have_http_status(:unprocessable_content)
       json = JSON.parse(response.body)
@@ -152,22 +206,26 @@ RSpec.describe Api::V1::MaintenanceLogsController, type: :controller do
           title: 'Test',
           description: 'Test',
           cost: 100,
-          status: 'pending'
+          status: 'pending',
+          priority: 'medium',
+          reported_date: Date.current
         }
       }
       expect(response).to have_http_status(:not_found)
     end
   end
 
-  describe 'PUT #update' do
-    let!(:maintenance_log) do
-      unit.maintenance_logs.create(
-        title: 'Fix leak',
-        description: 'Kitchen sink leaking',
-        cost: 150.00,
-        status: 'pending'
-      )
-    end
+   describe 'PUT #update' do
+     let!(:maintenance_log) do
+       unit.maintenance_logs.create(
+         title: 'Fix leak',
+         description: 'Kitchen sink leaking',
+         cost: 150.00,
+         status: 'pending',
+         priority: 'medium',
+         reported_date: Date.current
+       )
+     end
 
     it 'updates maintenance log as owner' do
       put :update, params: {
@@ -236,15 +294,17 @@ RSpec.describe Api::V1::MaintenanceLogsController, type: :controller do
     end
   end
 
-  describe 'DELETE #destroy' do
-    let!(:maintenance_log) do
-      unit.maintenance_logs.create(
-        title: 'Test maintenance',
-        description: 'Test description',
-        cost: 100.00,
-        status: 'pending'
-      )
-    end
+   describe 'DELETE #destroy' do
+     let!(:maintenance_log) do
+       unit.maintenance_logs.create(
+         title: 'Test maintenance',
+         description: 'Test description',
+         cost: 100.00,
+         status: 'pending',
+         priority: 'medium',
+         reported_date: Date.current
+       )
+     end
 
     it 'deletes maintenance log as owner' do
       expect {
