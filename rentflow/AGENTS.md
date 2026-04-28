@@ -16,7 +16,7 @@ bundle exec rspec --format documentation
 ## Run Linter
 ```bash
 bundle exec rubocop app/models/tenant.rb app/controllers/api/v1/tenants_controller.rb
-bundle exec rubocop app/models/rent_record.rb app/controllers/api/v1/rent_records_controller.rb
+bundle exec rubocop app/models/rent_record.rb app/controllers/api/v1/rent_records_controller.rb app/services/rent_record_generator.rb
 bundle exec rubocop -a  # Auto-correct
 ```
 
