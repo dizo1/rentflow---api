@@ -46,13 +46,16 @@ class Api::V1::DashboardController < Api::V1::BaseController
         data: properties.as_json(only: [:id, :name, :address, :property_type, :status, :total_units])
       },
       property_dashboards: properties.map { |p| p.dashboard_data },
-      units: {
-        total: total_units,
-        occupied: occupied_units,
-        vacant: units.where(occupancy_status: 'vacant').count,
-        occupancy_rate: occupancy_rate,
-        data: units.as_json(only: [:id, :property_id, :unit_number, :rent_amount, :deposit_amount, :occupancy_status, :tenant_name, :tenant_phone])
-      },
+        units: {
+          total: total_units,
+          occupied: occupied_units,
+          vacant: units.where(occupancy_status: 'vacant').count,
+          occupancy_rate: occupancy_rate,
+          data: units.as_json(
+            only: [:id, :property_id, :unit_number, :rent_amount, :deposit_amount, :occupancy_status],
+            methods: [:tenant_name, :tenant_phone]
+          )
+        },
       revenue: {
         monthly_potential: units.sum(:rent_amount).to_f,
         total_deposits: units.sum(:deposit_amount).to_f

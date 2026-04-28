@@ -26,8 +26,14 @@ Rails.application.routes.draw do
         resources :rent_records, only: [:index, :create]
         resources :maintenance_logs, only: [:index, :create]
       end
-      resources :rent_records, only: [:show, :update, :destroy]
-      resources :maintenance_logs, only: [:show, :update, :destroy]
+       resources :rent_records, only: [:show, :update, :destroy]
+       resources :maintenance_logs, only: [:show, :update, :destroy]
+
+       # Tenant management routes
+       resources :tenants, only: [:index, :show, :update, :destroy]
+       resources :units, only: [] do
+         resource :tenant, only: [:show, :create]
+       end
 
       # Maintenance management routes
       get 'maintenance/dashboard', to: 'maintenance#dashboard'

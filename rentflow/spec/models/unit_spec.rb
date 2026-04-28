@@ -19,9 +19,7 @@ RSpec.describe Unit, type: :model do
       unit_number: '101',
       rent_amount: 1200.00,
       deposit_amount: 2400.00,
-      occupancy_status: 'occupied',
-      tenant_name: 'John Doe',
-      tenant_phone: '555-1234'
+      occupancy_status: 'occupied'
     )
     expect(unit).to be_valid
   end
@@ -67,26 +65,12 @@ RSpec.describe Unit, type: :model do
     expect(unit.errors[:occupancy_status]).to include("can't be blank")
   end
 
-  it 'is invalid without tenant_name' do
-    unit = Unit.new(property: property, tenant_name: nil)
-    expect(unit).not_to be_valid
-    expect(unit.errors[:tenant_name]).to include("can't be blank")
-  end
-
-  it 'is invalid without tenant_phone' do
-    unit = Unit.new(property: property, tenant_phone: nil)
-    expect(unit).not_to be_valid
-    expect(unit.errors[:tenant_phone]).to include("can't be blank")
-  end
-
   it 'destroys units when property is destroyed' do
     unit = property.units.create(
       unit_number: '101',
       rent_amount: 1200.00,
       deposit_amount: 2400.00,
-      occupancy_status: 'occupied',
-      tenant_name: 'John Doe',
-      tenant_phone: '555-1234'
+      occupancy_status: 'occupied'
     )
     expect { property.destroy }.to change { Unit.count }.by(-1)
   end
@@ -96,7 +80,7 @@ RSpec.describe Unit, type: :model do
   end
 
   it 'is invalid with invalid occupancy_status' do
-    unit = Unit.new(property: property, unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'invalid_status', tenant_name: 'John', tenant_phone: '555-1234')
+    unit = Unit.new(property: property, unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'invalid_status')
     expect(unit).not_to be_valid
     expect(unit.errors[:occupancy_status]).to include("is not included in the list")
   end
@@ -112,14 +96,38 @@ RSpec.describe Unit, type: :model do
       expect(association.macro).to eq(:has_many)
     end
 
+    it 'has one tenant' do
+      association = described_class.reflect_on_association(:tenant)
+      expect(association.macro).to eq(:has_one)
+    end
+
+    it 'destroys associated tenant when destroyed' do
+      unit = property.units.create(
+        unit_number: '101',
+        rent_amount: 1200.00,
+        deposit_amount: 2400.00,
+        occupancy_status: 'occupied'
+      )
+      unit.create_tenant(
+        full_name: 'John Doe',
+        phone: '555-1234',
+        email: 'john@example.com',
+        national_id: '12345678A',
+        move_in_date: Date.current,
+        lease_start: Date.current,
+        lease_end: 1.year.from_now,
+        status: 'active',
+        emergency_contact: 'Jane Doe 555-9999'
+      )
+      expect { unit.destroy }.to change { Tenant.count }.by(-1)
+    end
+
     it 'destroys associated rent_records when destroyed' do
       unit = property.units.create(
         unit_number: '101',
         rent_amount: 1200.00,
         deposit_amount: 2400.00,
-        occupancy_status: 'occupied',
-        tenant_name: 'John Doe',
-        tenant_phone: '555-1234'
+        occupancy_status: 'occupied'
       )
       unit.rent_records.create(
         amount_due: 1200,
@@ -138,9 +146,7 @@ RSpec.describe Unit, type: :model do
         unit_number: '101',
         rent_amount: 1200.00,
         deposit_amount: 2400.00,
-        occupancy_status: 'occupied',
-        tenant_name: 'John Doe',
-        tenant_phone: '555-1234'
+        occupancy_status: 'occupied'
       )
       unit.maintenance_logs.create(
         title: 'Fix leak',
@@ -159,17 +165,13 @@ RSpec.describe Unit, type: :model do
           unit_number: '101',
           rent_amount: 1200.00,
           deposit_amount: 2400.00,
-          occupancy_status: 'occupied',
-          tenant_name: 'Jane Doe',
-          tenant_phone: '555-5678'
+          occupancy_status: 'occupied'
         )
         unit2 = property.units.build(
           unit_number: '101',
           rent_amount: 1300.00,
           deposit_amount: 2600.00,
-          occupancy_status: 'vacant',
-          tenant_name: 'Bob Smith',
-          tenant_phone: '555-9012'
+          occupancy_status: 'vacant'
         )
         expect(unit2).not_to be_valid
         expect(unit2.errors[:unit_number]).to include("has already been taken")
@@ -190,9 +192,7 @@ RSpec.describe Unit, type: :model do
           unit_number: '101',
           rent_amount: 1200.00,
           deposit_amount: 2400.00,
-          occupancy_status: 'vacant',
-          tenant_name: 'Alice Brown',
-          tenant_phone: '555-3456'
+          occupancy_status: 'vacant'
         )
         expect(unit2).to be_valid
       end
@@ -204,9 +204,7 @@ RSpec.describe Unit, type: :model do
           unit_number: '102',
           rent_amount: 0,
           deposit_amount: 2400.00,
-          occupancy_status: 'occupied',
-          tenant_name: 'John Doe',
-          tenant_phone: '555-1234'
+          occupancy_status: 'occupied'
         )
         expect(unit).not_to be_valid
         expect(unit.errors[:rent_amount]).to include("must be greater than zero")
@@ -220,9 +218,7 @@ RSpec.describe Unit, type: :model do
         unit_number: '101',
         rent_amount: 1200.00,
         deposit_amount: 2400.00,
-        occupancy_status: 'occupied',
-        tenant_name: 'John Doe',
-        tenant_phone: '555-1234'
+        occupancy_status: 'occupied'
       )
     end
     let!(:recent_record) do
@@ -279,9 +275,7 @@ RSpec.describe Unit, type: :model do
         unit_number: '101',
         rent_amount: 1200.00,
         deposit_amount: 2400.00,
-        occupancy_status: 'occupied',
-        tenant_name: 'John Doe',
-        tenant_phone: '555-1234'
+        occupancy_status: 'occupied'
       )
     end
     let!(:pending_log) do

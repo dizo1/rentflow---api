@@ -1,5 +1,6 @@
 class Unit < ApplicationRecord
   belongs_to :property
+  has_one :tenant, dependent: :destroy
   has_many :rent_records, dependent: :destroy
   has_many :maintenance_logs, dependent: :destroy
 
@@ -9,10 +10,17 @@ class Unit < ApplicationRecord
   validates :rent_amount, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :deposit_amount, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :occupancy_status, presence: true
-  validates :tenant_name, presence: true
-  validates :tenant_phone, presence: true
 
   validate :rent_amount_should_be_positive
+
+  # Convenience method to get tenant through association
+  def tenant_name
+    tenant&.full_name
+  end
+
+  def tenant_phone
+    tenant&.phone
+  end
 
   def current_rent_record
     rent_records.order(year: :desc, month: :desc).first

@@ -6,7 +6,7 @@ RSpec.describe Api::V1::MaintenanceLogsController, type: :controller do
   let(:user_token) { user.generate_jwt }
   let(:admin_token) { admin.generate_jwt }
   let!(:property) { Property.create(user: user, name: 'Test Property', address: '123 St', property_type: 'apartment', status: 'occupied', total_units: 5) }
-  let!(:unit) { property.units.create(unit_number: '101', rent_amount: 1000, deposit_amount: 2000, occupancy_status: 'occupied', tenant_name: 'John Doe', tenant_phone: '555-1234') }
+  let!(:unit) { property.units.create(unit_number: '101', rent_amount: 1000, deposit_amount: 2000, occupancy_status: 'occupied') }
 
   before do
     request.headers['Authorization'] = "Bearer #{user_token}"

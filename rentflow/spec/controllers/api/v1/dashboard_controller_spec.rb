@@ -15,9 +15,9 @@ RSpec.describe Api::V1::DashboardController, type: :controller do
       property1 = Property.create!(user: user, name: 'Property 1', address: '123 St', property_type: 'apartment', status: 'vacant', total_units: 5)
       property2 = Property.create!(user: user, name: 'Property 2', address: '456 Ave', property_type: 'house', status: 'occupied', total_units: 3)
 
-      property1.units.create!(unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied', tenant_name: 'Tenant A', tenant_phone: '555-1111')
-      property1.units.create!(unit_number: '102', rent_amount: 1300, deposit_amount: 2600, occupancy_status: 'vacant', tenant_name: 'Tenant B', tenant_phone: '555-3333')
-      property2.units.create!(unit_number: '201', rent_amount: 1800, deposit_amount: 3600, occupancy_status: 'occupied', tenant_name: 'Tenant C', tenant_phone: '555-2222')
+      property1.units.create!(unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied')
+      property1.units.create!(unit_number: '102', rent_amount: 1300, deposit_amount: 2600, occupancy_status: 'vacant')
+      property2.units.create!(unit_number: '201', rent_amount: 1800, deposit_amount: 3600, occupancy_status: 'occupied')
 
       get :show
 
@@ -64,8 +64,8 @@ RSpec.describe Api::V1::DashboardController, type: :controller do
       my_property = Property.create(user: user, name: 'My Property', address: '123 St', property_type: 'apartment', status: 'vacant', total_units: 5)
       other_property = Property.create(user: other_user, name: 'Other Property', address: '456 Ave', property_type: 'house', status: 'occupied', total_units: 3)
 
-      my_property.units.create(unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied', tenant_name: 'John', tenant_phone: '555-1111')
-      other_property.units.create(unit_number: '201', rent_amount: 2000, deposit_amount: 4000, occupancy_status: 'occupied', tenant_name: 'Jane', tenant_phone: '555-2222')
+      my_property.units.create(unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied')
+      other_property.units.create(unit_number: '201', rent_amount: 2000, deposit_amount: 4000, occupancy_status: 'occupied')
 
       get :show
 
@@ -85,8 +85,8 @@ RSpec.describe Api::V1::DashboardController, type: :controller do
   describe 'property dashboard hook' do
     it 'returns property-level dashboard data' do
       property = Property.create!(user: user, name: 'Test Property', address: '123 St', property_type: 'apartment', status: 'vacant', total_units: 5)
-      property.units.create!(unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied', tenant_name: 'Tenant A', tenant_phone: '555-1111')
-      property.units.create!(unit_number: '102', rent_amount: 1300, deposit_amount: 2600, occupancy_status: 'vacant', tenant_name: 'Tenant B', tenant_phone: '555-2222')
+      property.units.create!(unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied')
+      property.units.create!(unit_number: '102', rent_amount: 1300, deposit_amount: 2600, occupancy_status: 'vacant')
 
       data = property.dashboard_data
 

@@ -34,13 +34,13 @@ RSpec.describe Api::V1::UnitsController, type: :controller do
 
   describe 'POST #create' do
     it 'requires admin' do
-      post :create, params: { property_id: property.id, unit: { unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied', tenant_name: 'John Doe', tenant_phone: '555-1234' } }
+      post :create, params: { property_id: property.id, unit: { unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied' } }
       expect(response).to have_http_status(:forbidden)
     end
 
     it 'creates a unit as admin' do
       request.headers['Authorization'] = "Bearer #{admin_token}"
-      post :create, params: { property_id: property.id, unit: { unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied', tenant_name: 'John Doe', tenant_phone: '555-1234' } }
+      post :create, params: { property_id: property.id, unit: { unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied' } }
       expect(response).to have_http_status(:created)
       expect(JSON.parse(response.body)['data']['unit_number']).to eq('101')
     end
@@ -53,13 +53,13 @@ RSpec.describe Api::V1::UnitsController, type: :controller do
 
     it 'returns not found for non-existent property' do
       request.headers['Authorization'] = "Bearer #{admin_token}"
-      post :create, params: { property_id: 99999, unit: { unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied', tenant_name: 'John Doe', tenant_phone: '555-1234' } }
+      post :create, params: { property_id: 99999, unit: { unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied' } }
       expect(response).to have_http_status(:not_found)
     end
   end
 
   describe 'GET #show' do
-    let!(:unit) { property.units.create(unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied', tenant_name: 'John Doe', tenant_phone: '555-1234') }
+    let!(:unit) { property.units.create(unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied') }
 
     it 'returns unit for owner' do
       get :show, params: { id: unit.id }
@@ -87,7 +87,7 @@ RSpec.describe Api::V1::UnitsController, type: :controller do
   end
 
   describe 'PUT #update' do
-    let!(:unit) { property.units.create(unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied', tenant_name: 'John Doe', tenant_phone: '555-1234') }
+    let!(:unit) { property.units.create(unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied') }
 
     it 'updates as owner' do
       put :update, params: { id: unit.id, unit: { rent_amount: 1300 } }
@@ -116,7 +116,7 @@ RSpec.describe Api::V1::UnitsController, type: :controller do
   end
 
   describe 'DELETE #destroy' do
-    let!(:unit) { property.units.create(unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied', tenant_name: 'John Doe', tenant_phone: '555-1234') }
+    let!(:unit) { property.units.create(unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'occupied') }
 
     it 'deletes as owner' do
       expect { delete :destroy, params: { id: unit.id } }.to change { Unit.count }.by(-1)

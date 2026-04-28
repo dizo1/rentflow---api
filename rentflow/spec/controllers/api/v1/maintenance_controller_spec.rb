@@ -6,7 +6,7 @@ RSpec.describe Api::V1::MaintenanceController, type: :controller do
   let(:user_token) { user.generate_jwt }
   let(:admin_token) { admin.generate_jwt }
   let!(:property) { Property.create(user: user, name: 'Test Property', address: '123 St', property_type: 'apartment', status: 'occupied', property_status: 'pending', total_units: 5) }
-  let!(:unit) { property.units.create(unit_number: '101', rent_amount: 1000, deposit_amount: 2000, occupancy_status: 'occupied', tenant_name: 'John Doe', tenant_phone: '555-1234') }
+  let!(:unit) { property.units.create(unit_number: '101', rent_amount: 1000, deposit_amount: 2000, occupancy_status: 'occupied') }
 
   before do
     request.headers['Authorization'] = "Bearer #{user_token}"
@@ -30,7 +30,7 @@ RSpec.describe Api::V1::MaintenanceController, type: :controller do
       request.headers['Authorization'] = "Bearer #{admin_token}"
       # Create another property for admin view
       other_property = Property.create(user: User.create(email: 'other@example.com', password: 'password123'), name: 'Other Property', address: '456 St', property_type: 'apartment', status: 'vacant', property_status: 'pending', total_units: 3)
-      other_property.units.create(unit_number: '201', rent_amount: 800, deposit_amount: 1600, occupancy_status: 'occupied', tenant_name: 'Jane Doe', tenant_phone: '555-5678')
+      other_property.units.create(unit_number: '201', rent_amount: 800, deposit_amount: 1600, occupancy_status: 'occupied')
 
       get :dashboard
       expect(response).to have_http_status(:ok)

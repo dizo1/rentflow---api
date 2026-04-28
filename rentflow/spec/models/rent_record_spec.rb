@@ -17,9 +17,7 @@ RSpec.describe RentRecord, type: :model do
       unit_number: '101',
       rent_amount: 1000.00,
       deposit_amount: 2000.00,
-      occupancy_status: 'occupied',
-      tenant_name: 'John Doe',
-      tenant_phone: '555-1234'
+      occupancy_status: 'occupied'
     )
   end
 
