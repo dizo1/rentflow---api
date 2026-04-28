@@ -28,6 +28,15 @@ Rails.application.routes.draw do
       end
       resources :rent_records, only: [:show, :update, :destroy]
       resources :maintenance_logs, only: [:show, :update, :destroy]
+
+      # Maintenance management routes
+      get 'maintenance/dashboard', to: 'maintenance#dashboard'
+      resources :maintenance, only: [:index, :show, :create, :update, :destroy] do
+        patch 'resolve', on: :member
+        collection do
+          get 'properties/:property_id', to: 'maintenance#index', as: 'property'
+        end
+      end
     end
   end
 end
