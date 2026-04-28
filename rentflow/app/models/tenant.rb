@@ -1,5 +1,6 @@
 class Tenant < ApplicationRecord
   belongs_to :unit
+  has_many :rent_records, dependent: :nullify
 
   # Enums
   enum :status, {
@@ -30,6 +31,20 @@ class Tenant < ApplicationRecord
   scope :pending_move_in, -> { where(status: :pending_move_in) }
   scope :blacklisted, -> { where(status: :blacklisted) }
   scope :by_status, ->(status) { where(status: status) if status.present? }
+
+  # Dashboard metrics for this tenant (useful for tenant portal later)
+  def dashboard_summary
+    {
+      full_name: full_name,
+      status: status,
+      lease_start: lease_start,
+      lease_end: lease_end,
+      days_until_lease_end: (lease_end - Date.current).to_i,
+      rent_records_count: rent_records.count,
+      overdue_balance: rent_records.overdue.sum(:balance).to_f,
+      total_paid: rent_records.sum(:amount_paid).to_f
+    }
+  end
 
   # Callbacks
   before_validation :normalize_email

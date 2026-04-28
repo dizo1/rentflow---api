@@ -20,42 +20,10 @@ class Property < ApplicationRecord
   scope :resolved, -> { where(property_status: 'resolved') }
   scope :cancelled, -> { where(property_status: 'cancelled') }
 
-  # Generate rent records for all units for a given month and year
+  # Generate rent records for all occupied units for a given month and year
+  # Uses RentRecordGenerator service for consistent business logic
   def generate_monthly_rent(month: Date.current.month, year: Date.current.year, due_day: 1)
-    raise ArgumentError, 'Month must be 1-12' unless (1..12).cover?(month)
-    raise ArgumentError, 'Year must be >= 2000' unless year >= 2000
-
-    due_date = Date.new(year, month, due_day)
-    generated_count = 0
-    skipped_count = 0
-
-    units.occupied.find_each do |unit|
-      # Skip if a rent record already exists for this unit/month/year
-      existing = unit.rent_records.where(month: month, year: year).exists?
-      if existing
-        skipped_count += 1
-        next
-      end
-
-      rent_record = unit.rent_records.build(
-        amount_due: unit.rent_amount,
-        amount_paid: 0,
-        balance: unit.rent_amount,
-        due_date: due_date,
-        status: 'pending',
-        month: month,
-        year: year
-      )
-
-      if rent_record.save
-        generated_count += 1
-      else
-        skipped_count += 1
-        Rails.logger.warn "Failed to generate rent record for unit #{unit.id}: #{rent_record.errors.full_messages.join(', ')}"
-      end
-    end
-
-    { generated: generated_count, skipped: skipped_count, total: generated_count + skipped_count }
+    RentRecordGenerator.generate(property: self, month: month, year: year, due_day: due_day)
   end
 
   # Dashboard hook - returns property-level metrics
@@ -73,7 +41,12 @@ class Property < ApplicationRecord
       vacant_units: units.where(occupancy_status: 'vacant').count,
       occupancy_rate: total_units > 0 ? (units.where(occupancy_status: 'occupied').count.to_f / total_units * 100).round(2) : 0.0,
       monthly_revenue: units.sum(:rent_amount).to_f,
-      total_deposits: units.sum(:deposit_amount).to_f
+      total_deposits: units.sum(:deposit_amount).to_f,
+      # Tenant metrics
+      tenants_count: units.joins(:tenant).distinct.count,
+      active_tenants: units.joins(:tenant).where(tenants: { status: 'active' }).distinct.count,
+      upcoming_lease_expirations: units.joins(:tenant).where('tenants.lease_end <= ?', 30.days.from_now).where(tenants: { status: 'active' }).distinct.count,
+      blacklisted_tenants: units.joins(:tenant).where(tenants: { status: 'blacklisted' }).distinct.count
     }
   end
 

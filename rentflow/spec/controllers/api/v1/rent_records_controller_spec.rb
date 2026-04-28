@@ -6,7 +6,19 @@ RSpec.describe Api::V1::RentRecordsController, type: :controller do
   let(:user_token) { user.generate_jwt }
   let(:admin_token) { admin.generate_jwt }
   let!(:property) { Property.create(user: user, name: 'Test Property', address: '123 St', property_type: 'apartment', status: 'occupied', total_units: 5) }
-  let!(:unit) { property.units.create(unit_number: '101', rent_amount: 1000, deposit_amount: 2000, occupancy_status: 'occupied') }
+   let!(:unit) { property.units.create(unit_number: '101', rent_amount: 1000, deposit_amount: 2000, occupancy_status: 'occupied') }
+   let!(:tenant) do
+     Tenant.create!(
+       unit: unit,
+       full_name: 'John Doe',
+       phone: '555-1234',
+       email: 'john@example.com',
+       move_in_date: Date.current,
+       lease_start: Date.current,
+       lease_end: 1.year.from_now.to_date,
+       status: 'active'
+     )
+   end
 
   before do
     request.headers['Authorization'] = "Bearer #{user_token}"
@@ -38,6 +50,7 @@ RSpec.describe Api::V1::RentRecordsController, type: :controller do
       json = JSON.parse(response.body)
       expect(json['data'].length).to eq(1)
       expect(json['data'].first['amount_due']).to eq('1000.0')
+      expect(json['data'].first['tenant_id']).to eq(tenant.id)
     end
 
     it 'returns rent records for owner-scoped unit' do
@@ -68,12 +81,19 @@ RSpec.describe Api::V1::RentRecordsController, type: :controller do
       json = JSON.parse(response.body)
       expect(json['data']['amount_due']).to eq('1000.0')
       expect(json['data']['balance']).to eq('500.0')
+      expect(json['data']['tenant_id']).to eq(tenant.id)
+      expect(json['data']['tenant_full_name']).to eq('John Doe')
+      expect(json['data']['tenant_phone']).to eq('555-1234')
     end
 
     it 'returns rent record for admin' do
       request.headers['Authorization'] = "Bearer #{admin_token}"
       get :show, params: { id: rent_record.id }
       expect(response).to have_http_status(:ok)
+      json = JSON.parse(response.body)
+      expect(json['data']['tenant_id']).to eq(tenant.id)
+      expect(json['data']['tenant_full_name']).to eq('John Doe')
+      expect(json['data']['tenant_phone']).to eq('555-1234')
     end
 
     it 'forbids access for other users' do
@@ -123,6 +143,9 @@ RSpec.describe Api::V1::RentRecordsController, type: :controller do
       json = JSON.parse(response.body)
       expect(json['data']['amount_due']).to eq('1000.0')
       expect(json['data']['status']).to eq('paid')
+      expect(json['data']['tenant_id']).to eq(tenant.id)
+      expect(json['data']['tenant_full_name']).to eq('John Doe')
+      expect(json['data']['tenant_phone']).to eq('555-1234')
     end
 
     it 'returns errors for invalid data' do
@@ -207,6 +230,60 @@ RSpec.describe Api::V1::RentRecordsController, type: :controller do
         rent_record: { amount_paid: 1000 }
       }
       expect(response).to have_http_status(:not_found)
+    end
+
+    describe 'payment update via payment_amount' do
+      it 'records a payment and updates status to partial' do
+        record = unit.rent_records.create!(
+          amount_due: 1000,
+          amount_paid: 0,
+          balance: 1000,
+          due_date: Date.current,
+          status: 'pending',
+          month: Date.current.month,
+          year: Date.current.year
+        )
+        put :update, params: { id: record.id, payment_amount: 300 }
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json['data']['amount_paid']).to eq('300.0')
+        expect(json['data']['balance']).to eq('700.0')
+        expect(json['data']['status']).to eq('partial')
+      end
+
+      it 'marks as paid when payment clears balance' do
+        record = unit.rent_records.create!(
+          amount_due: 1000,
+          amount_paid: 0,
+          balance: 1000,
+          due_date: Date.current,
+          status: 'pending',
+          month: Date.current.month,
+          year: Date.current.year
+        )
+        put :update, params: { id: record.id, payment_amount: 1000 }
+        expect(response).to have_http_status(:ok)
+        json = JSON.parse(response.body)
+        expect(json['data']['status']).to eq('paid')
+        expect(json['data']['balance']).to eq('0.0')
+        expect(json['data']['paid_at']).to be_present
+      end
+
+      it 'returns error for non-positive payment amount' do
+        record = unit.rent_records.create!(
+          amount_due: 1000,
+          amount_paid: 0,
+          balance: 1000,
+          due_date: Date.current,
+          status: 'pending',
+          month: Date.current.month,
+          year: Date.current.year
+        )
+        put :update, params: { id: record.id, payment_amount: 0 }
+        expect(response).to have_http_status(:unprocessable_content)
+        json = JSON.parse(response.body)
+        expect(json['error']).to eq('Update failed')
+      end
     end
   end
 

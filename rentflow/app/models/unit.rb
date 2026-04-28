@@ -49,7 +49,7 @@ class Unit < ApplicationRecord
     raise ArgumentError, 'Year must be >= 2000' unless year >= 2000
 
     # Check if already exists
-    existing = rent_records.where(month: month, year: year).first
+    existing = rent_records.find_by(month: month, year: year)
     return existing if existing
 
     due_date = Date.new(year, month, due_day)
@@ -61,7 +61,8 @@ class Unit < ApplicationRecord
       due_date: due_date,
       status: 'pending',
       month: month,
-      year: year
+      year: year,
+      tenant: tenant # Auto-associate current tenant
     )
   end
 
