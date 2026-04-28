@@ -5,9 +5,20 @@
 
 # Read more: https://github.com/cyu/rack-cors
 
+# Configure allowed origins from environment variable, with safe defaults for development
+allowed_origins = ENV.fetch('ALLOWED_ORIGINS') do
+  # In development, allow common localhost origins for convenience
+  if Rails.env.development? || Rails.env.test?
+    ["http://localhost:3000", "http://127.0.0.1:3000"]
+  else
+    # In production, require explicit configuration (no default)
+    []
+  end
+end
+
 Rails.application.config.middleware.insert_before 0, Rack::Cors do
   allow do
-    origins "*"
+    origins allowed_origins
 
     resource "*",
       headers: :any,

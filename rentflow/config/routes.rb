@@ -37,6 +37,13 @@ Rails.application.routes.draw do
           get 'properties/:property_id', to: 'maintenance#index', as: 'property'
         end
       end
+
+      # Admin routes
+      namespace :admin do
+        get 'dashboard', to: 'admin#dashboard'
+        get 'users', to: 'admin#users'
+        get 'properties', to: 'admin#all_properties'
+      end
     end
   end
 end
