@@ -2,15 +2,15 @@ class RentRecord < ApplicationRecord
   belongs_to :unit
   belongs_to :tenant, optional: true
 
-  # Enums - string-based for readability and query compatibility
-  enum :status, {
-    pending: 'pending',
-    unpaid: 'unpaid',
-    partial: 'partial',
-    paid: 'paid',
-    overdue: 'overdue',
-    waived: 'waived'
-  }, validate: true, _suffix: true
+   # Enums - string-based for readability and query compatibility
+   enum :status, {
+     pending: 'pending',
+     unpaid: 'unpaid',
+     partial: 'partial',
+     paid: 'paid',
+     overdue: 'overdue',
+     waived: 'waived'
+   }, validate: true, suffix: true
 
   # Validations
   validates :amount_due, presence: true, numericality: { greater_than_or_equal_to: 0 }
