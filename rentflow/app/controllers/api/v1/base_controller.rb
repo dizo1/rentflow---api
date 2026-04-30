@@ -6,7 +6,7 @@ class Api::V1::BaseController < ApplicationController
 
   def render_success(data = nil, message = nil, status = :ok)
     response = { success: true }
-    response[:data] = data if !data.nil? && (data.present? || data.is_a?(Array))
+    response[:data] = data if !data.nil? && (data.present? || data.is_a?(Array) || data.is_a?(ActiveRecord::Relation))
     response[:message] = message if message.present?
     render json: response, status: status
   end

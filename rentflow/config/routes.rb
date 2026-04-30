@@ -39,21 +39,32 @@ Rails.application.routes.draw do
          resource :tenant, only: [:show, :create]
        end
 
-      # Maintenance management routes
-      get 'maintenance/dashboard', to: 'maintenance#dashboard'
-      resources :maintenance, only: [:index, :show, :create, :update, :destroy] do
-        patch 'resolve', on: :member
-        collection do
-          get 'properties/:property_id', to: 'maintenance#index', as: 'property'
-        end
-      end
+       # Maintenance management routes
+       get 'maintenance/dashboard', to: 'maintenance#dashboard'
+       resources :maintenance, only: [:index, :show, :create, :update, :destroy] do
+         patch 'resolve', on: :member
+         collection do
+           get 'properties/:property_id', to: 'maintenance#index', as: 'property'
+         end
+       end
 
-      # Admin routes
-      namespace :admin do
-        get 'dashboard', to: 'admin#dashboard'
-        get 'users', to: 'admin#users'
-        get 'properties', to: 'admin#all_properties'
-      end
-    end
-  end
+       # Reminder routes
+       resources :reminders, only: [:index, :show, :create, :update, :destroy]
+
+       # Notification routes
+       resources :notifications, only: [:index, :show, :create, :update, :destroy] do
+         member do
+           patch :read
+           patch :unread
+         end
+       end
+
+       # Admin routes
+       namespace :admin do
+         get 'dashboard', to: 'admin#dashboard'
+         get 'users', to: 'admin#users'
+         get 'properties', to: 'admin#all_properties'
+       end
+     end
+   end
 end

@@ -1,6 +1,7 @@
 class Tenant < ApplicationRecord
   belongs_to :unit
   has_many :rent_records, dependent: :nullify
+  has_many :reminders, dependent: :destroy
 
   # Enums
   enum :status, {

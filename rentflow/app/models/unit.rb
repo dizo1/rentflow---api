@@ -3,6 +3,7 @@ class Unit < ApplicationRecord
   has_one :tenant, dependent: :destroy
   has_many :rent_records, dependent: :destroy
   has_many :maintenance_logs, dependent: :destroy
+  has_many :reminders, dependent: :destroy
 
   enum :occupancy_status, { occupied: 'occupied', vacant: 'vacant' }, validate: true
 
