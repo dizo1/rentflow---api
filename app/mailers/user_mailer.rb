@@ -4,7 +4,7 @@ class UserMailer < ApplicationMailer
     @reset_url = "https://rentflowz.lovable.app/reset-password?token=#{user.password_reset_token}"
     mail(
       to: @user.email,
-      from: 'noreply@rentflowz.com',
+      from: 'onboarding@resend.dev',
       subject: 'Reset your Rentflow password'
     )
   end
