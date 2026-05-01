@@ -22,6 +22,20 @@ class Api::V1::AuthController < Api::V1::BaseController
         end
     end
 
+    def logout
+        token = request.headers['Authorization']&.split(' ')&.last
+        if token
+            decoded = JWT.decode(token, Rails.application.secret_key_base)[0]
+            exp = Time.at(decoded['exp'])
+            BlocklistedToken.create!(token: token, exp: exp)
+            render_success({}, 'Logged out successfully')
+        else
+            render_unauthorized('No token provided')
+        end
+        rescue JWT::DecodeError
+            render_unauthorized('Invalid token')
+        end
+
     private
 
     def user_params

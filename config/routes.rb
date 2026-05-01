@@ -33,6 +33,8 @@ Rails.application.routes.draw do
          patch :resolve, on: :member
        end
 
+       delete 'logout', to: 'auth#logout'
+
        # Tenant management routes
        resources :tenants, only: [:index, :show, :update, :destroy]
        resources :units, only: [] do

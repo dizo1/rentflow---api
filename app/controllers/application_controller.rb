@@ -20,19 +20,23 @@ class ApplicationController < ActionController::API
 
     def authenticate_user
         token = request.headers['Authorization']&.split(' ')&.last
-        if token
+          if token
             begin
-                decoded = JWT.decode(token, Rails.application.secret_key_base)[0]
-                @current_user = User.find(decoded['user_id'])
-            rescue JWT::ExpiredSignature
-                render json: { success: false, error: 'Token expired' }, status: :unauthorized
+          # Check if token is blocklisted
+          if BlocklistedToken.exists?(token: token)
+            return render json: { success: false, error: 'Token has been revoked' }, status: :unauthorized
+          end
+            decoded = JWT.decode(token, Rails.application.secret_key_base)[0]
+            @current_user = User.find(decoded['user_id'])
+          rescue JWT::ExpiredSignature
+            render json: { success: false, error: 'Token expired' }, status: :unauthorized
             rescue JWT::DecodeError
-                render json: { success: false, error: 'Invalid token' }, status: :unauthorized
-            end
-        else
+            render json: { success: false, error: 'Invalid token' }, status: :unauthorized
+          end
+          else
             render json: { success: false, error: 'Missing token' }, status: :unauthorized
-        end
-    end
+          end
+       end
 
     def current_user
         @current_user

@@ -10,9 +10,17 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_30_051527) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_01_191034) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "blocklisted_tokens", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "exp"
+    t.string "token"
+    t.datetime "updated_at", null: false
+    t.index ["token"], name: "index_blocklisted_tokens_on_token"
+  end
 
   create_table "maintenance_logs", force: :cascade do |t|
     t.string "assigned_to"
