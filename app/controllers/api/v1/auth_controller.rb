@@ -45,7 +45,7 @@ class Api::V1::AuthController < Api::V1::BaseController
             password_reset_token: token,
             password_reset_sent_at: Time.current
                 )
-                UserMailer.password_reset(user).deliver_later
+                UserMailer.password_reset(user).deliver_now
                 end
             # Always return success to prevent email enumeration
             render_success({}, 'If that email exists you will receive a reset link shortly')
