@@ -51,15 +51,26 @@ Rails.application.routes.draw do
        # Reminder routes
        resources :reminders, only: [:index, :show, :create, :update, :destroy]
 
-       # Notification routes
-       resources :notifications, only: [:index, :show, :create, :update, :destroy] do
-         member do
-           patch :read
-           patch :unread
-         end
-       end
+        # Notification routes
+        resources :notifications, only: [:index, :show, :create, :update, :destroy] do
+          member do
+            patch :read
+            patch :unread
+          end
+        end
 
-       # Admin routes
+        # Analytics routes
+        get 'analytics', to: 'analytics#index'
+
+        # Payments routes
+        resources :payments, only: [:index] do
+          collection do
+            post 'upgrade'
+            post 'webhook'
+          end
+        end
+
+        # Admin routes
        namespace :admin do
          get 'dashboard', to: 'admin#dashboard'
          get 'users', to: 'admin#users'

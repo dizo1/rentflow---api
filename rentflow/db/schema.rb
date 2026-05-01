@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_04_29_071925) do
+ActiveRecord::Schema[8.1].define(version: 2026_04_30_051527) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -47,6 +47,20 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_071925) do
     t.index ["read_status"], name: "index_notifications_on_read_status"
     t.index ["user_id", "read_status"], name: "index_notifications_on_user_id_and_read_status"
     t.index ["user_id"], name: "index_notifications_on_user_id"
+  end
+
+  create_table "payments", force: :cascade do |t|
+    t.decimal "amount", precision: 10, scale: 2, null: false
+    t.datetime "created_at", null: false
+    t.datetime "paid_at"
+    t.string "payment_method"
+    t.integer "plan", null: false
+    t.string "reference", null: false
+    t.integer "status", null: false
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["reference"], name: "index_payments_on_reference", unique: true
+    t.index ["user_id"], name: "index_payments_on_user_id"
   end
 
   create_table "properties", force: :cascade do |t|
@@ -108,6 +122,19 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_071925) do
     t.index ["unit_id"], name: "index_rent_records_on_unit_id"
   end
 
+  create_table "subscriptions", force: :cascade do |t|
+    t.datetime "created_at", null: false
+    t.datetime "ends_at"
+    t.integer "plan", null: false
+    t.integer "sms_used", default: 0
+    t.datetime "starts_at"
+    t.integer "status", null: false
+    t.datetime "trial_ends_at"
+    t.datetime "updated_at", null: false
+    t.bigint "user_id", null: false
+    t.index ["user_id"], name: "index_subscriptions_on_user_id"
+  end
+
   create_table "tenants", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "email"
@@ -149,6 +176,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_071925) do
 
   add_foreign_key "maintenance_logs", "units"
   add_foreign_key "notifications", "users"
+  add_foreign_key "payments", "users"
   add_foreign_key "properties", "users"
   add_foreign_key "reminders", "maintenance_logs"
   add_foreign_key "reminders", "rent_records"
@@ -156,6 +184,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_04_29_071925) do
   add_foreign_key "reminders", "units"
   add_foreign_key "rent_records", "tenants"
   add_foreign_key "rent_records", "units"
+  add_foreign_key "subscriptions", "users"
   add_foreign_key "tenants", "units"
   add_foreign_key "units", "properties"
 end

@@ -17,6 +17,10 @@ class Api::V1::PropertiesController < Api::V1::BaseController
   end
 
   def create
+    unless PlanAccessService.can_create_property?(current_user)
+      return render json: { error: "Property limit reached. Upgrade plan." }, status: :forbidden
+    end
+
     property = Property.new(property_params)
     if property.save
       render_success(property.as_json(only: [:id, :name, :address, :property_type, :status, :property_status, :total_units, :user_id]), 'Property created successfully', :created)

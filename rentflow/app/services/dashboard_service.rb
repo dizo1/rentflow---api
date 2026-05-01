@@ -19,7 +19,9 @@ class DashboardService
       maintenance: {
         pending: pending_maintenance_count,
         resolved: resolved_maintenance_count
-      }
+      },
+      subscription: subscription_data,
+      payments: recent_payments
     }
   end
 
@@ -93,8 +95,48 @@ class DashboardService
 
   def resolved_maintenance_count
     @resolved_maintenance_count ||= MaintenanceLog.joins(unit: :property)
-                                                 .where(properties: { user: @user })
-                                                 .where(status: "resolved")
-                                                 .count
+                                                  .where(properties: { user: @user })
+                                                  .where(status: "resolved")
+                                                  .count
+  end
+
+  def subscription_data
+    subscription = @user.subscription
+    return nil unless subscription
+
+    days_left = if subscription.trialing? && subscription.trial_ends_at
+                  [(subscription.trial_ends_at.to_date - Date.current).to_i, 0].max
+                else
+                  # For active plans, perhaps show until ends_at or nil
+                  subscription.ends_at ? [(subscription.ends_at.to_date - Date.current).to_i, 0].max : nil
+                end
+
+    plan_config = PlanConfig.get_plan_config(subscription.plan)
+
+    {
+      plan: subscription.plan,
+      status: subscription.status,
+      days_left: days_left,
+      usage: {
+        properties_used: total_properties,
+        property_limit: plan_config[:property_limit],
+        units_used: total_units,
+        unit_limit: plan_config[:unit_limit],
+        sms_used: subscription.sms_used,
+        sms_limit: plan_config[:sms_limit]
+      },
+      features: plan_config[:features]
+    }
+  end
+
+  def recent_payments
+    @user.payments.where(status: :successful).order(paid_at: :desc).limit(5).map do |payment|
+      {
+        amount: payment.amount,
+        plan: payment.plan,
+        status: payment.status,
+        paid_at: payment.paid_at
+      }
+    end
   end
 end
