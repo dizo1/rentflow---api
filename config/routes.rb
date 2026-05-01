@@ -50,6 +50,9 @@ Rails.application.routes.draw do
          end
        end
 
+       post 'forgot_password', to: 'auth#forgot_password'
+        post 'reset_password', to: 'auth#reset_password'
+
        # Reminder routes
        resources :reminders, only: [:index, :show, :create, :update, :destroy]
 

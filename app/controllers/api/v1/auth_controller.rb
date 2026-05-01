@@ -1,5 +1,6 @@
 class Api::V1::AuthController < Api::V1::BaseController
     skip_before_action :authenticate_user, only: [:login, :signup]
+    skip_before_action :authenticate_user, only: [:login, :signup, :forgot_password, :reset_password]
 
     def login
         user_params = params.require(:user).permit(:email, :password)
@@ -35,6 +36,36 @@ class Api::V1::AuthController < Api::V1::BaseController
         rescue JWT::DecodeError
             render_unauthorized('Invalid token')
         end
+
+    def forgot_password
+        user = User.find_by(email: params[:email])
+            if user
+                token = SecureRandom.urlsafe_base64
+                user.update(
+            password_reset_token: token,
+            password_reset_sent_at: Time.current
+                )
+                UserMailer.password_reset(user).deliver_later
+                end
+            # Always return success to prevent email enumeration
+            render_success({}, 'If that email exists you will receive a reset link shortly')
+                end
+
+        def reset_password
+            user = User.find_by(password_reset_token: params[:token])
+             if user.nil? || user.password_reset_sent_at < 2.hours.ago
+             return render_error('Reset token is invalid or has expired', :unprocessable_entity)
+            end
+            if user.update(
+                password: params[:password],
+                password_reset_token: nil,
+                password_reset_sent_at: nil
+             )
+                render_success({}, 'Password reset successfully')
+                    else
+                render_error('Password reset failed', :unprocessable_entity, user.errors.full_messages)
+            end
+            end
 
     private
 
