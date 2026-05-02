@@ -3,6 +3,7 @@ require 'jwt'
 class User < ApplicationRecord
     has_secure_password
     has_many :properties, dependent: :destroy
+    has_many :payments, dependent: :destroy
     has_many :units, through: :properties
     has_one :subscription, dependent: :destroy
 
