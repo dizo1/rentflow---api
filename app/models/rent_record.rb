@@ -12,6 +12,8 @@ class RentRecord < ApplicationRecord
      waived: 'waived'
    }, validate: true, suffix: true
 
+    before_validation :set_defaults, on: :create
+
   # Validations
   validates :amount_due, presence: true, numericality: { greater_than_or_equal_to: 0 }
   validates :amount_paid, presence: true, numericality: { greater_than_or_equal_to: 0 }
@@ -117,6 +119,11 @@ class RentRecord < ApplicationRecord
   end
 
   private
+
+  def set_defaults
+    self.amount_paid ||= 0
+    self.balance ||= amount_due.to_f
+  end
 
   # Ensure tenant belongs to the same unit (data integrity)
   def tenant_must_belong_to_unit
