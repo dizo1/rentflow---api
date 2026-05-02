@@ -42,9 +42,11 @@ Rails.application.routes.draw do
         end
       end
 
-      # Rent records
       resources :rent_records, only: [:show, :update, :destroy] do
         post 'record_payment', on: :member
+        collection do
+          post :generate_bulk
+        end
       end
 
       # Maintenance logs

@@ -3,6 +3,49 @@ class Api::V1::RentRecordsController < Api::V1::BaseController
   before_action :set_rent_record, only: [:show, :update, :destroy, :record_payment]
   before_action :authorize_rent_record, only: [:show, :update, :destroy, :record_payment]
 
+
+        # POST /api/v1/rent_records/generate_bulk
+      def generate_bulk
+        month = (params[:month] || Date.current.month).to_i
+        year = (params[:year] || Date.current.year).to_i
+        due_day = (params[:due_day] || 1).to_i
+
+        properties = if admin_user?
+          Property.all
+        else
+          Property.where(user_id: current_user.id)
+        end
+
+        total_generated = 0
+        total_skipped = 0
+        total_units = 0
+        errors = []
+
+        properties.each do |property|
+          begin
+            result = property.generate_monthly_rent(month: month, year: year, due_day: due_day)
+            total_generated += result[:generated]
+            total_skipped += result[:skipped]
+            total_units += property.units.where(occupancy_status: 'occupied').count
+          rescue => e
+            errors << { property_id: property.id, property_name: property.name, error: e.message }
+          end
+        end
+
+        render_success(
+          {
+            total_properties: properties.count,
+            total_units_processed: total_units,
+            records_generated: total_generated,
+            records_skipped: total_skipped,
+            errors: errors,
+            month: month,
+            year: year
+          },
+          "Bulk rent generation complete: #{total_generated} records created, #{total_skipped} skipped"
+        )
+      end
+
   # GET /api/v1/units/:unit_id/rent_records
   def index
     rent_records = if admin_user?
