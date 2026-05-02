@@ -1,48 +1,57 @@
 class Api::V1::MaintenanceController < Api::V1::BaseController
-  before_action :set_property, only: [:index, :create]
+  before_action :set_property, only: [:index]
   before_action :set_maintenance_log, only: [:show, :update, :resolve, :destroy]
-  before_action :authorize_maintenance_access, only: [:index, :create]
   before_action :authorize_maintenance_log, only: [:show, :update, :resolve, :destroy]
 
+  # GET /api/v1/maintenance
   # GET /api/v1/maintenance/properties/:property_id
-  # List all maintenance logs for a specific property
-  # GET /api/v1/maintenance/properties/:property_id
-  # List all maintenance logs for a specific property
   def index
-    maintenance_logs = MaintenanceLog.joins(unit: :property).where(units: { property_id: @property.id })
+    maintenance_logs = if admin_user?
+      if @property
+        MaintenanceLog.joins(unit: :property).where(units: { property_id: @property.id })
+      else
+        MaintenanceLog.joins(unit: :property)
+      end
+    else
+      if @property
+        MaintenanceLog.joins(unit: :property).where(properties: { id: @property.id, user_id: current_user.id })
+      else
+        MaintenanceLog.joins(unit: :property).where(properties: { user_id: current_user.id })
+      end
+    end
+
     maintenance_logs = apply_filters(maintenance_logs)
     return if performed?
 
     total_count = maintenance_logs.count
+
     render_success(
       {
-        maintenance_logs: maintenance_logs.as_json(
-          only: [:id, :title, :description, :cost, :status, :priority, :reported_date, :resolved_at, :assigned_to, :notes, :created_at, :updated_at]
-        ),
+        maintenance_logs: maintenance_logs.map { |log| maintenance_log_json(log) },
         total_count: total_count,
         pending_count: maintenance_logs.where(status: 'pending').count,
         in_progress_count: maintenance_logs.where(status: 'in_progress').count,
         resolved_count: maintenance_logs.where(status: 'resolved').count
       },
-      "Found #{total_count} maintenance #{total_count == 1 ? 'log' : 'logs'}",
-      :ok
+      "Found #{total_count} maintenance #{total_count == 1 ? 'log' : 'logs'}"
     )
   end
 
   # GET /api/v1/maintenance/:id
-  # View one maintenance issue
   def show
     render_success(maintenance_log_json(@maintenance_log), 'Maintenance log retrieved successfully')
   end
 
-  # POST /api/v1/maintenance/properties/:property_id/units/:unit_id
-  # Create a repair request (maintenance log)
+  # POST /api/v1/maintenance
   def create
-    unit = @property.units.find(params[:unit_id])
-    authorize_unit_access(unit)
+    unit = if admin_user?
+      Unit.find(params[:unit_id])
+    else
+      Unit.joins(:property).where(properties: { user_id: current_user.id }).find(params[:unit_id])
+    end
 
     maintenance_log = unit.maintenance_logs.build(maintenance_log_params)
-    maintenance_log.status = 'pending' # Always start as pending
+    maintenance_log.status = 'pending'
 
     if maintenance_log.save
       render_success(
@@ -57,8 +66,7 @@ class Api::V1::MaintenanceController < Api::V1::BaseController
     render_not_found('Unit not found')
   end
 
-  # PUT /api/v1/maintenance/:id
-  # Update maintenance status and details
+  # PUT/PATCH /api/v1/maintenance/:id
   def update
     if @maintenance_log.update(maintenance_log_params)
       render_success(
@@ -71,9 +79,12 @@ class Api::V1::MaintenanceController < Api::V1::BaseController
   end
 
   # PATCH /api/v1/maintenance/:id/resolve
-  # Mark maintenance as resolved
   def resolve
-    if @maintenance_log.update(status: 'resolved')
+    if @maintenance_log.status == 'resolved'
+      return render_error('Already resolved', :unprocessable_content)
+    end
+
+    if @maintenance_log.mark_resolved!
       render_success(
         maintenance_log_json(@maintenance_log),
         'Maintenance request marked as resolved'
@@ -84,76 +95,56 @@ class Api::V1::MaintenanceController < Api::V1::BaseController
   end
 
   # DELETE /api/v1/maintenance/:id
-  # Delete maintenance log if necessary
   def destroy
-    if @maintenance_log.destroy
-      render_success(nil, 'Maintenance log deleted successfully', :no_content)
-    else
-      render_error('Failed to delete maintenance log', :unprocessable_content)
-    end
+    @maintenance_log.destroy
+    render_success(nil, 'Maintenance log deleted successfully', :no_content)
   end
 
   # GET /api/v1/maintenance/dashboard
-  # Get maintenance dashboard data
   def dashboard
-    if admin_user?
-      properties = Property.all
+    properties = if admin_user?
+      Property.all
     else
-      properties = Property.where(user_id: current_user.id)
+      Property.where(user_id: current_user.id)
     end
 
     property_ids = properties.pluck(:id)
+    all_logs = MaintenanceLog.joins(unit: :property).where(properties: { id: property_ids })
 
-    dashboard_data = {
-      total_properties: properties.count,
-      total_maintenance_logs: MaintenanceLog.joins(unit: :property).where(properties: { id: property_ids }).count,
-      pending_requests: MaintenanceLog.joins(unit: :property).where(properties: { id: property_ids }, status: 'pending').count,
-      in_progress_requests: MaintenanceLog.joins(unit: :property).where(properties: { id: property_ids }, status: 'in_progress').count,
-      resolved_requests: MaintenanceLog.joins(unit: :property).where(properties: { id: property_ids }, status: 'resolved').count,
-      recent_logs: MaintenanceLog.joins(unit: :property)
-        .where(properties: { id: property_ids })
-        .where(created_at: 30.days.ago..Time.current)
-        .order(created_at: :desc)
-        .limit(10)
-        .map { |log| maintenance_log_json(log) }
-    }
-
-    render_success(dashboard_data, 'Maintenance dashboard data retrieved successfully')
+    render_success(
+      {
+        total_properties: properties.count,
+        total_maintenance_logs: all_logs.count,
+        pending_requests: all_logs.where(status: 'pending').count,
+        in_progress_requests: all_logs.where(status: 'in_progress').count,
+        resolved_requests: all_logs.where(status: 'resolved').count,
+        recent_logs: all_logs.order(created_at: :desc).limit(10).map { |log| maintenance_log_json(log) }
+      },
+      'Maintenance dashboard data retrieved successfully'
+    )
   end
 
   private
 
   def set_property
-    if params[:property_id]
-      if admin_user?
-        @property = Property.find(params[:property_id])
-      else
-        @property = Property.where(user_id: current_user.id).find(params[:property_id])
-      end
+    return unless params[:property_id]
+    @property = if admin_user?
+      Property.find(params[:property_id])
+    else
+      Property.where(user_id: current_user.id).find(params[:property_id])
     end
   rescue ActiveRecord::RecordNotFound
     render_not_found('Property not found')
   end
 
   def set_maintenance_log
-    @maintenance_log = MaintenanceLog.find(params[:id])
+    @maintenance_log = MaintenanceLog.includes(unit: :property).find(params[:id])
   rescue ActiveRecord::RecordNotFound
     render_not_found('Maintenance log not found')
   end
 
-  def authorize_maintenance_access
-    return if admin_user?
-    return if @property && @property.user_id == current_user.id
-
-    render_forbidden('You do not have permission to access maintenance logs for this property')
-  end
-
   def authorize_maintenance_log
-    render_forbidden('You do not have permission to access this maintenance log') unless admin_user? || @maintenance_log.unit.property.user_id == current_user.id
-  end
-
-  def authorize_unit_access(unit)
-    render_forbidden('You do not have permission to create maintenance logs for this unit') unless admin_user? || unit.property.user_id == current_user.id
+    render_forbidden('Unauthorized') unless admin_user? || @maintenance_log.unit.property.user_id == current_user.id
   end
 
   def maintenance_log_params
