@@ -3,6 +3,36 @@ class Api::V1::UnitsController < Api::V1::BaseController
   before_action :authorize_unit, only: [:show, :update, :destroy]
   before_action :set_property, only: [:index, :create]
 
+  # GET /api/v1/units/vacant
+  def vacant
+    units = if admin_user?
+      Unit.where(occupancy_status: 'vacant').includes(:property)
+    else
+      Unit.joins(:property)
+          .where(properties: { user_id: current_user.id })
+          .where(occupancy_status: 'vacant')
+          .includes(:property)
+    end
+
+    render_success(
+      units.map do |unit|
+        {
+          id: unit.id,
+          unit_number: unit.unit_number,
+          rent_amount: unit.rent_amount,
+          deposit_amount: unit.deposit_amount,
+          occupancy_status: unit.occupancy_status,
+          property: {
+            id: unit.property.id,
+            name: unit.property.name,
+            address: unit.property.address
+          }
+        }
+      end,
+      "#{units.count} vacant unit(s) found"
+    )
+  end
+
   # GET /api/v1/properties/:property_id/units
   def index
     units = if admin_user?
