@@ -52,17 +52,21 @@ Rails.application.routes.draw do
         patch :resolve, on: :member
       end
 
-      # Tenants
-      resources :tenants, only: [:index, :show, :update, :destroy]
+     # Tenants
+  resources :tenants, only: [:index, :show, :create, :update, :destroy] do
+    member do
+      patch :assign
+    end
+  end
 
-      # Maintenance management
-      get 'maintenance/dashboard', to: 'maintenance#dashboard'
-      resources :maintenance, only: [:index, :show, :create, :update, :destroy] do
-        patch 'resolve', on: :member
-        collection do
-          get 'properties/:property_id', to: 'maintenance#index', as: 'property'
-        end
-      end
+  resources :units, only: [:show, :update, :destroy] do
+  resources :rent_records, only: [:index, :create]
+  resources :maintenance_logs, only: [:index, :create]
+  resource :tenant, only: [:show, :create], controller: 'tenants', action: { show: :show_by_unit, create: :create_for_unit }
+  collection do
+    get :vacant
+  end
+  end
 
       # Reminders
       resources :reminders, only: [:index, :show, :create, :update, :destroy]

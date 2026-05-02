@@ -1,5 +1,5 @@
 class Tenant < ApplicationRecord
-  belongs_to :unit
+  belongs_to :unit, optional: true
   has_many :rent_records, dependent: :nullify
   has_many :reminders, dependent: :destroy
 
@@ -70,6 +70,7 @@ class Tenant < ApplicationRecord
   end
 
   def update_unit_occupancy
-    unit.update(occupancy_status: status == "active" ? "occupied" : "vacant")
-  end
+    return unless unit.present?
+  unit.update(occupancy_status: status == "active" ? "occupied" : "vacant")
+end
 end

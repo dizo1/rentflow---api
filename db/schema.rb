@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_01_191034) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_02_084137) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -113,8 +113,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_01_191034) do
 
   create_table "rent_records", force: :cascade do |t|
     t.decimal "amount_due"
-    t.decimal "amount_paid"
-    t.decimal "balance"
+    t.decimal "amount_paid", default: "0.0"
+    t.decimal "balance", default: "0.0"
     t.datetime "created_at", null: false
     t.date "due_date"
     t.integer "month"
@@ -154,7 +154,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_01_191034) do
     t.string "national_id"
     t.string "phone", null: false
     t.string "status", default: "pending_move_in", null: false
-    t.bigint "unit_id", null: false
+    t.bigint "unit_id"
     t.datetime "updated_at", null: false
     t.index ["email"], name: "index_tenants_on_email", unique: true
     t.index ["lease_end"], name: "index_tenants_on_lease_end"
@@ -178,6 +178,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_01_191034) do
     t.string "email"
     t.string "name"
     t.string "password_digest"
+    t.datetime "password_reset_sent_at"
+    t.string "password_reset_token"
     t.string "role"
     t.datetime "updated_at", null: false
   end
