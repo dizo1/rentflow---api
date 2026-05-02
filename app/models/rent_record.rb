@@ -16,8 +16,8 @@ class RentRecord < ApplicationRecord
 
   # Validations
   validates :amount_due, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :amount_paid, presence: true, numericality: { greater_than_or_equal_to: 0 }
-  validates :balance, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :amount_paid, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
+  validates :balance, numericality: { greater_than_or_equal_to: 0 }, allow_nil: true
   validates :due_date, presence: true
   validates :month, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 1, less_than_or_equal_to: 12 }
   validates :year, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 2000 }
