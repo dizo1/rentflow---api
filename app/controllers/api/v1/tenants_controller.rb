@@ -131,13 +131,12 @@ class Api::V1::TenantsController < Api::V1::BaseController
   rescue ActiveRecord::RecordNotFound
     render_not_found('Tenant not found')
   end
-
-   def authorize_tenant
+  def authorize_tenant
     return if admin_user?
     return if @tenant.unit.nil? # Allow for standalone tenants
     return if @tenant.unit.property.user_id == current_user.id
-      render_forbidden('Unauthorized')
-    end
+    render_forbidden('Unauthorized')
+  end
 
   def tenant_fields
     [:id, :unit_id, :full_name, :phone, :email, :national_id,
