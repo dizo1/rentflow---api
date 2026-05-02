@@ -24,11 +24,12 @@ class RentRecord < ApplicationRecord
   validates :status, presence: true
   validate :tenant_must_belong_to_unit
 
-  # Callbacks
+  # Callbacks — ORDER MATTERS, set_defaults must be last
   before_validation :set_paid_at, if: -> { status == 'paid' && paid_at.nil? }
   before_validation :associate_tenant_from_unit, if: -> { tenant_id.nil? && unit.present? && unit.tenant.present? }
   before_validation :calculate_balance, if: -> { new_record? || will_save_change_to_amount_due? || will_save_change_to_amount_paid? }
   before_validation :auto_adjust_status, if: -> { amount_due_changed? || amount_paid_changed? || due_date_changed? }, unless: :status_changed?
+  before_validation :set_defaults, on: :create
 
   # Scopes
   scope :by_month_year, ->(month, year) { where(month: month, year: year) }
@@ -122,7 +123,7 @@ class RentRecord < ApplicationRecord
 
   def set_defaults
     self.amount_paid ||= 0
-    self.balance ||= amount_due.to_f
+    self.balance = amount_due.to_f - self.amount_paid.to_f
   end
 
   # Ensure tenant belongs to the same unit (data integrity)
