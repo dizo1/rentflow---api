@@ -1,7 +1,7 @@
 class Api::V1::TenantsController < Api::V1::BaseController
   before_action :set_tenant, only: [:show, :update, :destroy, :assign]
   before_action :set_unit, only: [:show_by_unit, :create_for_unit, :assign]
-  before_action :authorize_tenant, only: [:show, :update, :destroy, :assign]
+  before_action :authorize_tenant, only: [:show, :update, :destroy]
 
   # GET /api/v1/tenants
   def index
@@ -132,11 +132,12 @@ class Api::V1::TenantsController < Api::V1::BaseController
     render_not_found('Tenant not found')
   end
 
-  def authorize_tenant
+   def authorize_tenant
     return if admin_user?
-    return if @tenant.unit.present? && @tenant.unit.property.user_id == current_user.id
-    render_forbidden('Unauthorized')
-  end
+    return if @tenant.unit.nil? # Allow for standalone tenants
+    return if @tenant.unit.property.user_id == current_user.id
+      render_forbidden('Unauthorized')
+    end
 
   def tenant_fields
     [:id, :unit_id, :full_name, :phone, :email, :national_id,
