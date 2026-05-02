@@ -53,6 +53,9 @@ Rails.application.routes.draw do
        post 'forgot_password', to: 'auth#forgot_password'
         post 'reset_password', to: 'auth#reset_password'
 
+        get 'profile', to: 'users#profile'
+        patch 'profile', to: 'users#update_profile'
+
        # Reminder routes
        resources :reminders, only: [:index, :show, :create, :update, :destroy]
 
@@ -61,6 +64,9 @@ Rails.application.routes.draw do
           member do
             patch :read
             patch :unread
+          end
+            collection do
+            patch :read_all
           end
         end
 

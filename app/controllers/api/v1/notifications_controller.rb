@@ -1,80 +1,79 @@
 class Api::V1::NotificationsController < Api::V1::BaseController
   before_action :authenticate_user
-  before_action :set_notification, only: [ :show, :update, :destroy, :read, :unread ]
+  before_action :set_notification, only: [:show, :update, :destroy, :read, :unread]
+  before_action :authorize_notification, only: [:show, :update, :destroy, :read, :unread]
 
   # GET /api/v1/notifications
   def index
-    # Only show notifications for the current user
     notifications = Notification.where(user_id: current_user.id)
-    render_success(notifications)
+    render_success(
+      notifications.as_json(only: [:id, :title, :message, :notification_type, :read_status, :created_at, :updated_at]),
+      'Notifications retrieved successfully'
+    )
   end
 
   # GET /api/v1/notifications/:id
   def show
-    # Ensure the notification belongs to the current user
-    if @notification.user_id == current_user.id
-      render_success(@notification)
-    else
-      render_not_found
-    end
+    render_success(
+      @notification.as_json(only: [:id, :title, :message, :notification_type, :read_status, :created_at, :updated_at]),
+      'Notification retrieved successfully'
+    )
   end
 
   # POST /api/v1/notifications
   def create
-    # For creating a notification, we set the user_id to current_user
-    @notification = Notification.new(notification_params.merge(user_id: current_user.id))
-    if @notification.save
-      render_success(@notification, "Notification created successfully", :created)
+    notification = Notification.new(notification_params.merge(user_id: current_user.id))
+    if notification.save
+      render_success(
+        notification.as_json(only: [:id, :title, :message, :notification_type, :read_status, :created_at, :updated_at]),
+        'Notification created successfully',
+        :created
+      )
     else
-      render_error(@notification.errors.full_messages.join(", "), :unprocessable_content)
+      render_error('Validation failed', :unprocessable_content, notification.errors.full_messages)
     end
   end
 
   # PATCH/PUT /api/v1/notifications/:id
   def update
-    # Ensure the notification belongs to the current user
-    if @notification.user_id == current_user.id
-      if @notification.update(notification_params)
-        render_success(@notification, "Notification updated successfully")
-      else
-        render_error(@notification.errors.full_messages.join(", "), :unprocessable_content)
-      end
+    if @notification.update(notification_params)
+      render_success(
+        @notification.as_json(only: [:id, :title, :message, :notification_type, :read_status, :created_at, :updated_at]),
+        'Notification updated successfully'
+      )
     else
-      render_not_found
+      render_error('Update failed', :unprocessable_content, @notification.errors.full_messages)
     end
   end
 
   # DELETE /api/v1/notifications/:id
   def destroy
-    # Ensure the notification belongs to the current user
-    if @notification.user_id == current_user.id
-      @notification.destroy
-      render_success(nil, "Notification deleted successfully")
-    else
-      render_not_found
-    end
+    @notification.destroy
+    render_success(nil, 'Notification deleted successfully')
   end
 
   # PATCH /api/v1/notifications/:id/read
   def read
-    # Ensure the notification belongs to the current user
-    if @notification.user_id == current_user.id
-      @notification.update!(read_status: true)
-      render_success(@notification, "Notification marked as read")
-    else
-      render_not_found
-    end
+    @notification.update!(read_status: true)
+    render_success(
+      @notification.as_json(only: [:id, :read_status]),
+      'Notification marked as read'
+    )
   end
 
   # PATCH /api/v1/notifications/:id/unread
   def unread
-    # Ensure the notification belongs to the current user
-    if @notification.user_id == current_user.id
-      @notification.update!(read_status: false)
-      render_success(@notification, "Notification marked as unread")
-    else
-      render_not_found
-    end
+    @notification.update!(read_status: false)
+    render_success(
+      @notification.as_json(only: [:id, :read_status]),
+      'Notification marked as unread'
+    )
+  end
+
+  # PATCH /api/v1/notifications/read_all
+  def read_all
+    Notification.where(user_id: current_user.id).update_all(read_status: true)
+    render_success(nil, 'All notifications marked as read')
   end
 
   private
@@ -82,7 +81,11 @@ class Api::V1::NotificationsController < Api::V1::BaseController
   def set_notification
     @notification = Notification.find(params[:id])
   rescue ActiveRecord::RecordNotFound
-    render_not_found
+    render_not_found('Notification not found')
+  end
+
+  def authorize_notification
+    render_forbidden('Unauthorized') unless @notification.user_id == current_user.id
   end
 
   def notification_params
