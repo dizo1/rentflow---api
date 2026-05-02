@@ -1,20 +1,29 @@
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
-
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
   get "up" => "rails/health#show", as: :rails_health_check
-
-  # Defines the root path route ("/")
-  # root "posts#index"
 
   namespace :api do
     namespace :v1 do
-      get 'dashboard', to: 'dashboard#show'
+      # Auth routes
       post 'login', to: 'auth#login'
       post 'signup', to: 'auth#signup'
+      delete 'logout', to: 'auth#logout'
+      post 'forgot_password', to: 'auth#forgot_password'
+      post 'reset_password', to: 'auth#reset_password'
+
+      # Profile routes
       get 'profile', to: 'users#profile'
+      patch 'profile', to: 'users#update_profile'
+
+      # Dashboard
+      get 'dashboard', to: 'dashboard#show'
+
+      # Analytics
+      get 'analytics', to: 'analytics#index'
+
+      # Users
       resources :users, only: [:index, :show, :update, :destroy]
+
+      # Properties
       resources :properties, only: [:index, :show, :create, :update, :destroy] do
         post 'generate_rent', on: :member
         resources :units, only: [:index, :create] do
@@ -22,71 +31,67 @@ Rails.application.routes.draw do
           resources :maintenance_logs, only: [:index, :create]
         end
       end
+
+      # Units
       resources :units, only: [:show, :update, :destroy] do
         resources :rent_records, only: [:index, :create]
         resources :maintenance_logs, only: [:index, :create]
+        resource :tenant, only: [:show, :create]
+        collection do
+          get :vacant
+        end
       end
-       resources :rent_records, only: [:show, :update, :destroy] do
-         post 'record_payment', on: :member
-       end
-       resources :maintenance_logs, only: [:show, :update, :destroy] do
-         patch :resolve, on: :member
-       end
 
-       delete 'logout', to: 'auth#logout'
+      # Rent records
+      resources :rent_records, only: [:show, :update, :destroy] do
+        post 'record_payment', on: :member
+      end
 
-       # Tenant management routes
-       resources :tenants, only: [:index, :show, :update, :destroy]
-       resources :units, only: [] do
-         resource :tenant, only: [:show, :create]
-       end
+      # Maintenance logs
+      resources :maintenance_logs, only: [:show, :update, :destroy] do
+        patch :resolve, on: :member
+      end
 
-       # Maintenance management routes
-       get 'maintenance/dashboard', to: 'maintenance#dashboard'
-       resources :maintenance, only: [:index, :show, :create, :update, :destroy] do
-         patch 'resolve', on: :member
-         collection do
-           get 'properties/:property_id', to: 'maintenance#index', as: 'property'
-         end
-       end
+      # Tenants
+      resources :tenants, only: [:index, :show, :update, :destroy]
 
-       post 'forgot_password', to: 'auth#forgot_password'
-        post 'reset_password', to: 'auth#reset_password'
-
-        get 'profile', to: 'users#profile'
-        patch 'profile', to: 'users#update_profile'
-
-       # Reminder routes
-       resources :reminders, only: [:index, :show, :create, :update, :destroy]
-
-        # Notification routes
-        resources :notifications, only: [:index, :show, :create, :update, :destroy] do
-          member do
-            patch :read
-            patch :unread
-          end
-            collection do
-            patch :read_all
-          end
+      # Maintenance management
+      get 'maintenance/dashboard', to: 'maintenance#dashboard'
+      resources :maintenance, only: [:index, :show, :create, :update, :destroy] do
+        patch 'resolve', on: :member
+        collection do
+          get 'properties/:property_id', to: 'maintenance#index', as: 'property'
         end
+      end
 
-        # Analytics routes
-        get 'analytics', to: 'analytics#index'
+      # Reminders
+      resources :reminders, only: [:index, :show, :create, :update, :destroy]
 
-        # Payments routes
-        resources :payments, only: [:index] do
-          collection do
-            post 'upgrade'
-            post 'webhook'
-          end
+      # Notifications
+      resources :notifications, only: [:index, :show, :create, :update, :destroy] do
+        member do
+          patch :read
+          patch :unread
         end
+        collection do
+          patch :read_all
+        end
+      end
 
-        # Admin routes
-       namespace :admin do
-         get 'dashboard', to: 'admin#dashboard'
-         get 'users', to: 'admin#users'
-         get 'properties', to: 'admin#all_properties'
-       end
-     end
-   end
+      # Payments
+      resources :payments, only: [:index] do
+        collection do
+          post 'upgrade'
+          post 'webhook'
+        end
+      end
+
+      # Admin
+      namespace :admin do
+        get 'dashboard', to: 'admin#dashboard'
+        get 'users', to: 'admin#users'
+        get 'properties', to: 'admin#all_properties'
+      end
+    end
+  end
 end
