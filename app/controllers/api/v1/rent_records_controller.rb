@@ -1,8 +1,7 @@
 class Api::V1::RentRecordsController < Api::V1::BaseController
-  before_action :require_admin, only: [:index, :create]
   before_action :set_unit, only: [:index, :create]
-  before_action :set_rent_record, only: [:show, :update, :destroy]
-  before_action :authorize_rent_record, only: [:show, :update, :destroy]
+  before_action :set_rent_record, only: [:show, :update, :destroy, :record_payment]
+  before_action :authorize_rent_record, only: [:show, :update, :destroy, :record_payment]
 
   # GET /api/v1/units/:unit_id/rent_records
   def index
@@ -37,7 +36,6 @@ class Api::V1::RentRecordsController < Api::V1::BaseController
   # POST /api/v1/units/:unit_id/rent_records
   def create
     rent_record = @unit.rent_records.build(rent_record_params)
-    # Auto-associate tenant from unit if not provided
     rent_record.tenant ||= @unit.tenant
 
     if rent_record.save
@@ -55,9 +53,7 @@ class Api::V1::RentRecordsController < Api::V1::BaseController
   end
 
   # PUT/PATCH /api/v1/rent_records/:id
-  # Accepts either amount_paid (to add a payment) or direct field updates
   def update
-    # Special handling for payment updates
     if payment_update_params.key?(:amount_paid)
       payment_amount = payment_update_params[:amount_paid].to_f
       current_paid = @rent_record.amount_paid.to_f
@@ -66,7 +62,6 @@ class Api::V1::RentRecordsController < Api::V1::BaseController
       @rent_record.amount_paid = new_total_paid
       @rent_record.balance = @rent_record.amount_due - new_total_paid
 
-      # Auto-determine status based on financial state
       if @rent_record.balance <= 0
         @rent_record.status = 'paid'
         @rent_record.paid_at ||= Time.current
@@ -74,12 +69,10 @@ class Api::V1::RentRecordsController < Api::V1::BaseController
         @rent_record.status = 'partial'
       end
 
-      # Check for overdue
       if @rent_record.due_date.past? && @rent_record.balance > 0
         @rent_record.status = 'overdue'
       end
     else
-      # Standard update (allow direct status changes like 'waived')
       @rent_record.assign_attributes(rent_record_params)
     end
 
@@ -103,7 +96,6 @@ class Api::V1::RentRecordsController < Api::V1::BaseController
   end
 
   # POST /api/v1/rent_records/:id/record_payment
-  # Explicit endpoint for recording a payment (clearer intent)
   def record_payment
     payment_amount = params[:payment_amount].to_f
     if payment_amount <= 0
@@ -144,14 +136,11 @@ class Api::V1::RentRecordsController < Api::V1::BaseController
 
   def set_unit
     if params[:unit_id]
-      if admin_user?
-        @unit = Unit.find(params[:unit_id])
+      @unit = if admin_user?
+        Unit.find(params[:unit_id])
       else
-        @unit = Unit.joins(:property).where(properties: { user_id: current_user.id }).find(params[:unit_id])
+        Unit.joins(:property).where(properties: { user_id: current_user.id }).find(params[:unit_id])
       end
-    elsif params[:id] && !@rent_record
-      set_rent_record
-      @unit = @rent_record.unit
     end
   rescue ActiveRecord::RecordNotFound
     render_not_found('Unit not found')
@@ -164,10 +153,7 @@ class Api::V1::RentRecordsController < Api::V1::BaseController
   end
 
   def authorize_rent_record
-    record = @rent_record || (@unit&.rent_records&.find(params[:id]))
-    return unless record
-
-    unless admin_user? || record.unit.property.user_id == current_user.id
+    unless admin_user? || @rent_record.unit.property.user_id == current_user.id
       render_forbidden('Unauthorized')
     end
   end
@@ -187,9 +173,5 @@ class Api::V1::RentRecordsController < Api::V1::BaseController
 
   def payment_update_params
     params.permit(:payment_amount)
-  end
-
-  def require_admin
-    render_forbidden('Admin access required') unless admin_user?
   end
 end
