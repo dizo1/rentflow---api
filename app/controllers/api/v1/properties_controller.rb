@@ -2,31 +2,42 @@ class Api::V1::PropertiesController < Api::V1::BaseController
   before_action :set_property, only: [:show, :update, :destroy, :generate_rent]
   before_action :authorize_property, only: [:show, :update, :destroy, :generate_rent]
 
-        def index
-          properties = if admin_user?
-          Property.all
-        else
-          Property.where(user_id: current_user.id)
-        end
-
-        # Check if pagination params are present
-        if params[:page].present? || params[:per_page].present?
-          result = paginate(properties)
-          render_success(
-            {
-              properties: result[:data].as_json(only: [:id, :name, :address, :property_type, :status, :property_status, :total_units, :user_id]),
-              meta: result[:meta]
-            },
-            'Properties retrieved successfully'
-          )
-        else
-          # No pagination - return all
-          render_success(
-            properties.as_json(only: [:id, :name, :address, :property_type, :status, :property_status, :total_units, :user_id]),
-            'Properties retrieved successfully'
-          )
-        end
+    def index
+      properties = if admin_user?
+        Property.all
+      else
+        Property.where(user_id: current_user.id)
       end
+
+      # Apply filters
+      properties = properties.where(status: params[:status]) if params[:status].present?
+      properties = properties.where(property_type: params[:property_type]) if params[:property_type].present?
+      properties = properties.where(property_status: params[:property_status]) if params[:property_status].present?
+      
+      # Apply search
+      if params[:search].present?
+        search_term = "%#{params[:search]}%"
+        properties = properties.where("name ILIKE ? OR address ILIKE ?", search_term, search_term)
+      end
+
+      # Check if pagination params are present
+      if params[:page].present? || params[:per_page].present?
+        result = paginate(properties)
+        render_success(
+          {
+            properties: result[:data].as_json(only: [:id, :name, :address, :property_type, :status, :property_status, :total_units, :user_id]),
+            meta: result[:meta]
+          },
+          'Properties retrieved successfully'
+        )
+      else
+        # No pagination - return all
+        render_success(
+          properties.as_json(only: [:id, :name, :address, :property_type, :status, :property_status, :total_units, :user_id]),
+          'Properties retrieved successfully'
+        )
+      end
+    end
 
   def show
     render_success(
