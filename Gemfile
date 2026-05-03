@@ -52,7 +52,7 @@ group :development, :test do
 
   gem "dotenv-rails", groups: %i[development test]
   gem 'rspec-rails'
-  gem 'shoulda-matchers', '~> 5.0'
+  gem 'shoulda-matchers', '~> 7.0'
 
   # Static analysis for security vulnerabilities [https://brakemanscanner.org/]
   gem "brakeman", require: false
