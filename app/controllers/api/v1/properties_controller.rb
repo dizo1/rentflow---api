@@ -2,17 +2,23 @@ class Api::V1::PropertiesController < Api::V1::BaseController
   before_action :set_property, only: [:show, :update, :destroy, :generate_rent]
   before_action :authorize_property, only: [:show, :update, :destroy, :generate_rent]
 
-  def index
-    properties = if admin_user?
-      Property.all
-    else
-      Property.where(user_id: current_user.id)
+      def index
+      properties = if admin_user?
+        Property.all
+      else
+        Property.where(user_id: current_user.id)
+      end
+
+      result = paginate(properties)
+
+      render_success(
+        {
+          properties: result[:data].as_json(only: [:id, :name, :address, :property_type, :status, :property_status, :total_units, :user_id]),
+          meta: result[:meta]
+        },
+        'Properties retrieved successfully'
+      )
     end
-    render_success(
-      properties.as_json(only: [:id, :name, :address, :property_type, :status, :property_status, :total_units, :user_id]),
-      'Properties retrieved successfully'
-    )
-  end
 
   def show
     render_success(

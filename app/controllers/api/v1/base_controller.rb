@@ -1,4 +1,5 @@
 class Api::V1::BaseController < ApplicationController
+  include Paginatable
   rescue_from ActiveRecord::RecordInvalid, with: :validation_error
   rescue_from ::ValidationError, with: :validation_error_handler
 
