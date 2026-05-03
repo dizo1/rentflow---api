@@ -85,7 +85,7 @@ Rails.application.routes.draw do
       end
 
       # Payments
-      resources :payments, only: [:index] do
+      resources :payments, only: [:index, :show] do
         collection do
           post 'upgrade'
           post 'webhook'
