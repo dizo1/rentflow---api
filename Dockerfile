@@ -75,4 +75,4 @@ ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
 # Start server
 EXPOSE 80
-CMD ["bundle", "exec", "rails", "server", "-b", "0.0.0.0", "-p", "80"]
+CMD ["sh", "-c", "bundle exec rails server -b 0.0.0.0 -p ${PORT:-80}"]
