@@ -1,0 +1,326 @@
+require 'rails_helper'
+
+RSpec.describe Unit, type: :model do
+  let!(:user) { User.create(email: 'owner@example.com', password: 'password123') }
+  let!(:property) do
+    Property.create(
+      user: user,
+      name: 'Test Property',
+      address: '123 St',
+      property_type: 'apartment',
+      status: 'occupied',
+      total_units: 5
+    )
+  end
+
+  it 'is valid with all required attributes' do
+    unit = Unit.new(
+      property: property,
+      unit_number: '101',
+      rent_amount: 1200.00,
+      deposit_amount: 2400.00,
+      occupancy_status: 'occupied'
+    )
+    expect(unit).to be_valid
+  end
+
+  it 'belongs to a property' do
+    association = described_class.reflect_on_association(:property)
+    expect(association.macro).to eq(:belongs_to)
+  end
+
+  it 'is invalid without a unit_number' do
+    unit = Unit.new(property: property, unit_number: nil)
+    expect(unit).not_to be_valid
+    expect(unit.errors[:unit_number]).to include("can't be blank")
+  end
+
+  it 'is invalid without rent_amount' do
+    unit = Unit.new(property: property, rent_amount: nil)
+    expect(unit).not_to be_valid
+    expect(unit.errors[:rent_amount]).to include("can't be blank")
+  end
+
+  it 'is invalid with negative rent_amount' do
+    unit = Unit.new(property: property, rent_amount: -100)
+    expect(unit).not_to be_valid
+    expect(unit.errors[:rent_amount]).to include("must be greater than or equal to 0")
+  end
+
+  it 'is invalid without deposit_amount' do
+    unit = Unit.new(property: property, deposit_amount: nil)
+    expect(unit).not_to be_valid
+    expect(unit.errors[:deposit_amount]).to include("can't be blank")
+  end
+
+  it 'is invalid with negative deposit_amount' do
+    unit = Unit.new(property: property, deposit_amount: -500)
+    expect(unit).not_to be_valid
+    expect(unit.errors[:deposit_amount]).to include("must be greater than or equal to 0")
+  end
+
+  it 'is invalid without occupancy_status' do
+    unit = Unit.new(property: property, occupancy_status: nil)
+    expect(unit).not_to be_valid
+    expect(unit.errors[:occupancy_status]).to include("can't be blank")
+  end
+
+  it 'destroys units when property is destroyed' do
+    unit = property.units.create(
+      unit_number: '101',
+      rent_amount: 1200.00,
+      deposit_amount: 2400.00,
+      occupancy_status: 'occupied'
+    )
+    expect { property.destroy }.to change { Unit.count }.by(-1)
+  end
+
+  it 'supports occupancy_status enum values' do
+    expect(Unit.occupancy_statuses.keys).to match_array(%w[occupied vacant])
+  end
+
+  it 'is invalid with invalid occupancy_status' do
+    unit = Unit.new(property: property, unit_number: '101', rent_amount: 1200, deposit_amount: 2400, occupancy_status: 'invalid_status')
+    expect(unit).not_to be_valid
+    expect(unit.errors[:occupancy_status]).to include("is not included in the list")
+  end
+
+  describe 'associations' do
+    it 'has many rent_records' do
+      association = described_class.reflect_on_association(:rent_records)
+      expect(association.macro).to eq(:has_many)
+    end
+
+    it 'has many maintenance_logs' do
+      association = described_class.reflect_on_association(:maintenance_logs)
+      expect(association.macro).to eq(:has_many)
+    end
+
+    it 'has one tenant' do
+      association = described_class.reflect_on_association(:tenant)
+      expect(association.macro).to eq(:has_one)
+    end
+
+    it 'destroys associated tenant when destroyed' do
+      unit = property.units.create(
+        unit_number: '101',
+        rent_amount: 1200.00,
+        deposit_amount: 2400.00,
+        occupancy_status: 'occupied'
+      )
+      unit.create_tenant(
+        full_name: 'John Doe',
+        phone: '555-1234',
+        email: 'john@example.com',
+        national_id: '12345678A',
+        move_in_date: Date.current,
+        lease_start: Date.current,
+        lease_end: 1.year.from_now,
+        status: 'active',
+        emergency_contact: 'Jane Doe 555-9999'
+      )
+      expect { unit.destroy }.to change { Tenant.count }.by(-1)
+    end
+
+    it 'destroys associated rent_records when destroyed' do
+      unit = property.units.create(
+        unit_number: '101',
+        rent_amount: 1200.00,
+        deposit_amount: 2400.00,
+        occupancy_status: 'occupied'
+      )
+      unit.rent_records.create(
+        amount_due: 1200,
+        amount_paid: 0,
+        balance: 1200,
+        due_date: Date.current,
+        status: 'pending',
+        month: 1,
+        year: 2024
+      )
+      expect { unit.destroy }.to change { RentRecord.count }.by(-1)
+    end
+
+     it 'destroys associated maintenance_logs when destroyed' do
+       unit = property.units.create(
+         unit_number: '101',
+         rent_amount: 1200.00,
+         deposit_amount: 2400.00,
+         occupancy_status: 'occupied'
+       )
+       unit.maintenance_logs.create(
+         title: 'Fix leak',
+         description: 'Kitchen sink leaking',
+         cost: 150.00,
+         status: 'pending',
+         priority: 'medium',
+         reported_date: Date.current
+       )
+       expect { unit.destroy }.to change { MaintenanceLog.count }.by(-1)
+     end
+  end
+
+  describe 'validations' do
+    context 'with duplicate unit_number for same property' do
+      it 'is invalid' do
+        property.units.create(
+          unit_number: '101',
+          rent_amount: 1200.00,
+          deposit_amount: 2400.00,
+          occupancy_status: 'occupied'
+        )
+        unit2 = property.units.build(
+          unit_number: '101',
+          rent_amount: 1300.00,
+          deposit_amount: 2600.00,
+          occupancy_status: 'vacant'
+        )
+        expect(unit2).not_to be_valid
+        expect(unit2.errors[:unit_number]).to include("has already been taken")
+      end
+    end
+
+    context 'with unit_number unique across different properties' do
+      it 'is valid' do
+        property2 = Property.create(
+          user: user,
+          name: 'Second Property',
+          address: '456 Other St',
+          property_type: 'apartment',
+          status: 'occupied',
+          total_units: 10
+        )
+        unit2 = property2.units.build(
+          unit_number: '101',
+          rent_amount: 1200.00,
+          deposit_amount: 2400.00,
+          occupancy_status: 'vacant'
+        )
+        expect(unit2).to be_valid
+      end
+    end
+
+    context 'with zero or negative rent_amount' do
+      it 'is invalid when rent_amount is zero' do
+        unit = property.units.build(
+          unit_number: '102',
+          rent_amount: 0,
+          deposit_amount: 2400.00,
+          occupancy_status: 'occupied'
+        )
+        expect(unit).not_to be_valid
+        expect(unit.errors[:rent_amount]).to include("must be greater than zero")
+      end
+    end
+  end
+
+  describe 'rent_records helpers' do
+    let!(:unit) do
+      property.units.create(
+        unit_number: '101',
+        rent_amount: 1200.00,
+        deposit_amount: 2400.00,
+        occupancy_status: 'occupied'
+      )
+    end
+    let!(:recent_record) do
+      unit.rent_records.create(
+        amount_due: 1200,
+        amount_paid: 1200,
+        balance: 0,
+        due_date: Date.current,
+        status: 'paid',
+        month: Date.current.month,
+        year: Date.current.year,
+        paid_at: Time.current
+      )
+    end
+    let!(:old_record) do
+      unit.rent_records.create(
+        amount_due: 1200,
+        amount_paid: 0,
+        balance: 1200,
+        due_date: 1.month.ago,
+        status: 'pending',
+        month: 1.month.ago.month,
+        year: 1.month.ago.year,
+        paid_at: nil
+      )
+    end
+
+    describe '#current_rent_record' do
+      it 'returns the most recent rent record' do
+        expect(unit.current_rent_record).to eq(recent_record)
+      end
+    end
+
+    describe '#pending_rent_records' do
+      it 'returns only pending and overdue records' do
+        expect(unit.pending_rent_records).to match_array([old_record])
+      end
+    end
+
+    describe '#rent_fully_paid_for?' do
+      it 'returns true when rent is paid for given month and year' do
+        expect(unit.rent_fully_paid_for?(month: Date.current.month, year: Date.current.year)).to be true
+      end
+
+      it 'returns false when rent is not paid for given month and year' do
+        expect(unit.rent_fully_paid_for?(month: 1.month.ago.month, year: 1.month.ago.year)).to be false
+      end
+    end
+  end
+
+  describe 'maintenance_logs helpers' do
+    let!(:unit) do
+      property.units.create(
+        unit_number: '101',
+        rent_amount: 1200.00,
+        deposit_amount: 2400.00,
+        occupancy_status: 'occupied'
+      )
+    end
+    let!(:pending_log) do
+      unit.maintenance_logs.create(
+        title: 'Fix leak',
+        description: 'Kitchen sink leaking',
+        cost: 150.00,
+        status: 'pending',
+        priority: 'medium',
+        reported_date: Date.current
+      )
+    end
+    let!(:in_progress_log) do
+      unit.maintenance_logs.create(
+        title: 'Paint walls',
+        description: 'Living room needs painting',
+        cost: 300.00,
+        status: 'in_progress',
+        priority: 'medium',
+        reported_date: Date.current
+      )
+    end
+    let!(:resolved_log) do
+      unit.maintenance_logs.create(
+        title: 'Replace filter',
+        description: 'HVAC filter replacement',
+        cost: 50.00,
+        status: 'resolved',
+        priority: 'medium',
+        reported_date: Date.current
+      )
+    end
+
+    describe '#open_maintenance_logs' do
+      it 'returns only pending and in_progress maintenance logs' do
+        expect(unit.open_maintenance_logs).to match_array([pending_log, in_progress_log])
+      end
+    end
+
+    describe '#resolved_maintenance_logs' do
+      it 'returns only resolved maintenance logs' do
+        expect(unit.resolved_maintenance_logs).to match_array([resolved_log])
+      end
+    end
+  end
+end
