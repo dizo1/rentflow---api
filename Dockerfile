@@ -74,5 +74,4 @@ USER 1000:1000
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
 # Start server
-EXPOSE 80
-CMD ["sh", "-c", "bundle exec rails server -b 0.0.0.0 -p ${PORT:-80}"]
+CMD ["sh", "-c", "bundle exec rails server -b 0.0.0.0 -p ${PORT:-3000}"]
