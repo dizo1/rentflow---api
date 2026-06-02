@@ -40,6 +40,23 @@ class Api::V1::UsersController < Api::V1::BaseController
     end
   end
 
+  # PATCH /api/v1/change_password
+  def change_password
+    unless current_user.authenticate(params[:current_password])
+      return render_error('Current password is incorrect', :unprocessable_content)
+    end
+
+    if params[:password] != params[:password_confirmation]
+      return render_error('Password confirmation does not match', :unprocessable_content)
+    end
+
+    if current_user.update(password: params[:password])
+      render_success(nil, 'Password updated successfully')
+    else
+      render_error('Password update failed', :unprocessable_content, current_user.errors.full_messages)
+    end
+  end
+
   # PUT/PATCH /api/v1/users/:id
   def update
     if @user.update(user_params)
