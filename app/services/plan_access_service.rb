@@ -5,8 +5,8 @@ class PlanAccessService
     return false unless subscription
     subscription.check_and_expire!
     return false unless subscription.active? || subscription.trialing?
-    properties_used = user.properties.count
-    properties_used < PlanConfig.property_limit(subscription.plan)
+    return true if PlanConfig.property_limit(subscription.plan) == -1
+    user.properties.count < PlanConfig.property_limit(subscription.plan)
   end
 
   def self.can_create_unit?(user)
@@ -15,8 +15,8 @@ class PlanAccessService
     return false unless subscription
     subscription.check_and_expire!
     return false unless subscription.active? || subscription.trialing?
-    units_used = user.units.count
-    units_used < PlanConfig.unit_limit(subscription.plan)
+    return true if PlanConfig.unit_limit(subscription.plan) == -1
+    user.units.count < PlanConfig.unit_limit(subscription.plan)
   end
 
   def self.can_send_sms?(user)
@@ -25,6 +25,7 @@ class PlanAccessService
     return false unless subscription
     subscription.check_and_expire!
     return false unless subscription.active? || subscription.trialing?
+    return true if PlanConfig.sms_limit(subscription.plan) == -1
     subscription.sms_used < PlanConfig.sms_limit(subscription.plan)
   end
 

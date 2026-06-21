@@ -1,30 +1,30 @@
 class Api::V1::UsersController < Api::V1::BaseController
-  before_action :require_admin, only: [:index]
-  before_action :set_user, only: [:show, :update, :destroy]
-  before_action :authorize_user, only: [:update, :destroy]
+  before_action :require_admin, only: [ :index ]
+  before_action :set_user, only: [ :show, :update, :destroy ]
+  before_action :authorize_user, only: [ :update, :destroy ]
 
   # GET /api/v1/users
   def index
     users = User.all
     render_success(
-      users.as_json(only: [:id, :name, :email, :role]),
-      'Users retrieved successfully'
+      users.as_json(only: [ :id, :name, :email, :role ]),
+      "Users retrieved successfully"
     )
   end
 
   # GET /api/v1/users/:id
   def show
     render_success(
-      @user.as_json(only: [:id, :name, :email, :role]),
-      'User retrieved successfully'
+      @user.as_json(only: [ :id, :name, :email, :role ]),
+      "User retrieved successfully"
     )
   end
 
   # GET /api/v1/profile
   def profile
     render_success(
-      current_user.as_json(only: [:id, :name, :email, :role]),
-      'Profile retrieved successfully'
+      current_user.as_json(only: [ :id, :name, :email, :role ]),
+      "Profile retrieved successfully"
     )
   end
 
@@ -32,28 +32,28 @@ class Api::V1::UsersController < Api::V1::BaseController
   def update_profile
     if current_user.update(profile_params)
       render_success(
-        current_user.as_json(only: [:id, :name, :email, :role]),
-        'Profile updated successfully'
+        current_user.as_json(only: [ :id, :name, :email, :role ]),
+        "Profile updated successfully"
       )
     else
-      render_error('Update failed', :unprocessable_content, current_user.errors.full_messages)
+      render_error("Update failed", :unprocessable_content, current_user.errors.full_messages)
     end
   end
 
   # PATCH /api/v1/change_password
   def change_password
     unless current_user.authenticate(params[:current_password])
-      return render_error('Current password is incorrect', :unprocessable_content)
+      return render_error("Current password is incorrect", :unprocessable_content)
     end
 
     if params[:password] != params[:password_confirmation]
-      return render_error('Password confirmation does not match', :unprocessable_content)
+      return render_error("Password confirmation does not match", :unprocessable_content)
     end
 
     if current_user.update(password: params[:password])
-      render_success(nil, 'Password updated successfully')
+      render_success(nil, "Password updated successfully")
     else
-      render_error('Password update failed', :unprocessable_content, current_user.errors.full_messages)
+      render_error("Password update failed", :unprocessable_content, current_user.errors.full_messages)
     end
   end
 
@@ -61,18 +61,18 @@ class Api::V1::UsersController < Api::V1::BaseController
   def update
     if @user.update(user_params)
       render_success(
-        @user.as_json(only: [:id, :name, :email, :role]),
-        'User updated successfully'
+        @user.as_json(only: [ :id, :name, :email, :role ]),
+        "User updated successfully"
       )
     else
-      render_error('Update failed', :unprocessable_content, @user.errors.full_messages)
+      render_error("Update failed", :unprocessable_content, @user.errors.full_messages)
     end
   end
 
   # DELETE /api/v1/users/:id
   def destroy
     @user.destroy
-    render_success(nil, 'User deleted successfully', :no_content)
+    render_success(nil, "User deleted successfully", :no_content)
   end
 
   private
@@ -80,19 +80,19 @@ class Api::V1::UsersController < Api::V1::BaseController
   def set_user
     @user = User.find(params[:id])
   rescue ActiveRecord::RecordNotFound
-    render_not_found('User not found')
+    render_not_found("User not found")
   end
 
   def authorize_user
-    render_forbidden('Unauthorized') unless current_user.id == @user.id || admin_user?
+    render_forbidden("Unauthorized") unless current_user.id == @user.id || admin_user?
   end
 
   def require_admin
-    render_forbidden('Admin access required') unless admin_user?
+    render_forbidden("Admin access required") unless admin_user?
   end
 
   def user_params
-    params.require(:user).permit(:name, :email, :role)
+    params.require(:user).permit(:name, :email)
   end
 
   def profile_params

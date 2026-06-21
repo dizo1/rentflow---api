@@ -97,7 +97,6 @@ RSpec.describe Api::V1::MaintenanceLogsController, type: :controller do
       expect(response).to have_http_status(:forbidden)
     end
   end
-  end
 
   describe 'GET #show' do
     let!(:maintenance_log) do
@@ -189,7 +188,6 @@ RSpec.describe Api::V1::MaintenanceLogsController, type: :controller do
           priority: 'medium',
           reported_date: Date.current
         }
-      }
       }
       expect(response).to have_http_status(:unprocessable_content)
       json = JSON.parse(response.body)

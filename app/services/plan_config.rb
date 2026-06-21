@@ -4,7 +4,7 @@ class PlanConfig
       unit_limit: 3,
       property_limit: 1,
       sms_limit: 10,
-      features: ['basic_dashboard', 'rent_tracking', 'maintenance'],
+      features: [ "basic_dashboard", "rent_tracking", "maintenance" ],
       analytics_enabled: false,
       exports_enabled: false,
       bulk_sms_enabled: false
@@ -13,7 +13,7 @@ class PlanConfig
       unit_limit: 10,
       property_limit: 3,
       sms_limit: 50,
-      features: ['basic_dashboard', 'rent_tracking', 'maintenance', 'reminders'],
+      features: [ "basic_dashboard", "rent_tracking", "maintenance", "reminders" ],
       analytics_enabled: false,
       exports_enabled: false,
       bulk_sms_enabled: false
@@ -22,7 +22,7 @@ class PlanConfig
       unit_limit: -1,
       property_limit: -1,
       sms_limit: 500,
-      features: ['basic_dashboard', 'rent_tracking', 'maintenance', 'reminders', 'analytics', 'exports', 'bulk_sms'],
+      features: [ "basic_dashboard", "rent_tracking", "maintenance", "reminders", "analytics", "exports", "bulk_sms" ],
       analytics_enabled: true,
       exports_enabled: true,
       bulk_sms_enabled: true
@@ -34,26 +34,26 @@ class PlanConfig
   end
 
   def self.unit_limit(plan)
-    for(plan)[:unit_limit]
+    self.for(plan)[:unit_limit]
   end
 
   def self.property_limit(plan)
-    for(plan)[:property_limit]
+    self.for(plan)[:property_limit]
   end
 
   def self.sms_limit(plan)
-    for(plan)[:sms_limit]
+    self.for(plan)[:sms_limit]
   end
 
   def self.analytics_enabled?(plan)
-    for(plan)[:analytics_enabled]
+    self.for(plan)[:analytics_enabled]
   end
 
   def self.exports_enabled?(plan)
-    for(plan)[:exports_enabled]
+    self.for(plan)[:exports_enabled]
   end
 
   def self.bulk_sms_enabled?(plan)
-    for(plan)[:bulk_sms_enabled]
+    self.for(plan)[:bulk_sms_enabled]
   end
 end

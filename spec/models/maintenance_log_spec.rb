@@ -154,25 +154,25 @@ RSpec.describe MaintenanceLog, type: :model do
 
     describe '.pending' do
       it 'returns only pending maintenance logs' do
-        expect(described_class.pending).to match_array([pending_log])
+        expect(described_class.pending).to match_array([ pending_log ])
       end
     end
 
     describe '.in_progress' do
       it 'returns only in_progress maintenance logs' do
-        expect(described_class.in_progress).to match_array([in_progress_log])
+        expect(described_class.in_progress).to match_array([ in_progress_log ])
       end
     end
 
     describe '.resolved' do
       it 'returns only resolved maintenance logs' do
-        expect(described_class.resolved).to match_array([resolved_log])
+        expect(described_class.resolved).to match_array([ resolved_log ])
       end
     end
 
     describe '.cancelled' do
       it 'returns only cancelled maintenance logs' do
-        expect(described_class.cancelled).to match_array([cancelled_log])
+        expect(described_class.cancelled).to match_array([ cancelled_log ])
       end
     end
 
@@ -188,13 +188,13 @@ RSpec.describe MaintenanceLog, type: :model do
 
     describe '.open' do
       it 'returns pending and in_progress logs' do
-        expect(described_class.open).to match_array([pending_log, in_progress_log])
+        expect(described_class.open).to match_array([ pending_log, in_progress_log ])
       end
     end
 
     describe '.closed' do
       it 'returns resolved and cancelled logs' do
-        expect(described_class.closed).to match_array([resolved_log, cancelled_log])
+        expect(described_class.closed).to match_array([ resolved_log, cancelled_log ])
       end
     end
   end
@@ -249,7 +249,7 @@ RSpec.describe MaintenanceLog, type: :model do
    end
 
   describe 'priority enum' do
-    it { should define_enum_for(:priority).with_values(['low', 'medium', 'high', 'urgent']) }
+    it { should define_enum_for(:priority).with_values([ 'low', 'medium', 'high', 'urgent' ]) }
 
     it 'has correct priority values' do
       expect(MaintenanceLog.priorities.keys).to match_array(%w[low medium high urgent])
@@ -350,65 +350,6 @@ RSpec.describe MaintenanceLog, type: :model do
       end
 
       it 'returns nil if not resolved' do
-        log = MaintenanceLog.create!(
-          unit: unit,
-          title: 'Test',
-          description: 'd',
-          cost: 100,
-          status: 'pending',
-          priority: 'medium',
-          reported_date: Date.current
-        )
-        expect(log.days_to_resolve).to be_nil
-      end
-    end
-
-    describe '#summary' do
-      it 'returns hash with required keys' do
-        log = MaintenanceLog.create!(
-          unit: unit,
-          title: 'Test',
-          description: 'd',
-          cost: 100,
-          status: 'resolved',
-          priority: 'high',
-          reported_date: Date.current,
-          resolved_at: 1.day.ago,
-          assigned_to: 'Tech A'
-        )
-        summary = log.summary
-        expect(summary.keys).to include(:id, :title, :status, :priority, :cost, :days_to_resolve, :reported_date, :resolved_at, :assigned_to)
-      end
-    end
-  end
-
-      it 'returns true for cancelled status' do
-        log = MaintenanceLog.create!(unit: unit, title: 'Test', description: 'd', cost: 100, status: 'cancelled', priority: 'medium', reported_date: Date.current)
-        expect(log.completed?).to be true
-      end
-
-      it 'returns false for pending status' do
-        log = MaintenanceLog.create!(unit: unit, title: 'Test', description: 'd', cost: 100, status: 'pending', priority: 'medium', reported_date: Date.current)
-        expect(log.completed?).to be false
-      end
-    end
-
-    describe '#days_to_resolve' do
-      it 'returns number of days between reported_date and resolved_at' do
-        log = MaintenanceLog.create!(
-          unit: unit,
-          title: 'Test',
-          description: 'd',
-          cost: 100,
-          status: 'resolved',
-          priority: 'medium',
-          reported_date: 5.days.ago.to_date,
-          resolved_at: 2.days.ago
-        )
-        expect(log.days_to_resolve).to eq(3)
-      end
-
-      it 'returns nil if not resolved yet' do
         log = MaintenanceLog.create!(
           unit: unit,
           title: 'Test',

@@ -19,24 +19,39 @@ class ApplicationController < ActionController::API
     private
 
     def authenticate_user
-        token = request.headers['Authorization']&.split(' ')&.last
-          if token
-            begin
-          # Check if token is blocklisted
+        token = request.headers["Authorization"]&.split(" ")&.last
+        if token
           if BlocklistedToken.exists?(token: token)
-            return render json: { success: false, error: 'Token has been revoked' }, status: :unauthorized
+            render_unauthorized("Token has been revoked")
+            throw(:abort)
           end
-            decoded = JWT.decode(token, Rails.application.secret_key_base)[0]
-            @current_user = User.find(decoded['user_id'])
+
+          begin
+            decoded = JWT.decode(token, Rails.application.secret_key_base, true, algorithm: "HS256")[0]
+            user = User.find_by(id: decoded["user_id"])
+
+            unless user
+              render_unauthorized("User not found")
+              throw(:abort)
+            end
+            unless user.active?
+              render_unauthorized("User account is inactive")
+              throw(:abort)
+            end
+
+            @current_user = user
           rescue JWT::ExpiredSignature
-            render json: { success: false, error: 'Token expired' }, status: :unauthorized
-            rescue JWT::DecodeError
-            render json: { success: false, error: 'Invalid token' }, status: :unauthorized
+            render_unauthorized("Token expired")
+            throw(:abort)
+          rescue JWT::DecodeError
+            render_unauthorized("Invalid token")
+            throw(:abort)
           end
-          else
-            render json: { success: false, error: 'Missing token' }, status: :unauthorized
-          end
-       end
+        else
+          render_unauthorized("Missing token")
+          throw(:abort)
+        end
+    end
 
     def current_user
         @current_user
@@ -48,15 +63,15 @@ class ApplicationController < ActionController::API
 
     # Exception handlers
     def token_expired
-        render json: { success: false, error: 'Token expired' }, status: :unauthorized
+        render json: { success: false, error: "Token expired" }, status: :unauthorized
     end
 
     def invalid_token
-        render json: { success: false, error: 'Invalid token' }, status: :unauthorized
+        render json: { success: false, error: "Invalid token" }, status: :unauthorized
     end
 
     def record_not_found
-        render json: { success: false, error: 'Resource not found' }, status: :not_found
+        render json: { success: false, error: "Resource not found" }, status: :not_found
     end
 
     def missing_parameter(exception)
@@ -66,6 +81,6 @@ class ApplicationController < ActionController::API
     def internal_server_error(exception)
         Rails.logger.error("[Internal Server Error] #{exception.class}: #{exception.message}")
         Rails.logger.error(exception.backtrace.join("\n"))
-        render json: { success: false, error: 'Internal server error' }, status: :internal_server_error
+        render json: { success: false, error: "Internal server error" }, status: :internal_server_error
     end
 end

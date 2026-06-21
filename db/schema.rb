@@ -10,9 +10,26 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_02_084137) do
+ActiveRecord::Schema[8.1].define(version: 2026_06_21_182641) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "admin_audit_logs", force: :cascade do |t|
+    t.string "action", null: false
+    t.bigint "admin_id", null: false
+    t.datetime "created_at", null: false
+    t.string "ip_address"
+    t.jsonb "metadata", default: {}, null: false
+    t.bigint "target_id"
+    t.string "target_type", null: false
+    t.datetime "updated_at", null: false
+    t.text "user_agent"
+    t.index ["action"], name: "index_admin_audit_logs_on_action"
+    t.index ["admin_id"], name: "index_admin_audit_logs_on_admin_id"
+    t.index ["created_at"], name: "index_admin_audit_logs_on_created_at"
+    t.index ["target_type", "target_id"], name: "index_admin_audit_logs_on_target_type_and_target_id"
+    t.index ["target_type"], name: "index_admin_audit_logs_on_target_type"
+  end
 
   create_table "blocklisted_tokens", force: :cascade do |t|
     t.datetime "created_at", null: false
@@ -174,6 +191,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_02_084137) do
   end
 
   create_table "users", force: :cascade do |t|
+    t.boolean "active", default: true, null: false
     t.datetime "created_at", null: false
     t.string "email"
     t.string "name"
@@ -182,8 +200,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_02_084137) do
     t.string "password_reset_token"
     t.string "role"
     t.datetime "updated_at", null: false
+    t.index ["active"], name: "index_users_on_active"
   end
 
+  add_foreign_key "admin_audit_logs", "users", column: "admin_id"
   add_foreign_key "maintenance_logs", "units"
   add_foreign_key "notifications", "users"
   add_foreign_key "payments", "users"
