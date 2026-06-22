@@ -83,25 +83,22 @@ Rails.application.routes.draw do
         end
       end
 
-      # Admin
-      namespace :admin do
-        get "dashboard", to: "admins#dashboard"
-        resources :users, only: [ :index, :show, :update ], controller: "admins" do
-          member do
-            patch :promote
-            patch :demote
-            patch :suspend
-            patch :activate
-          end
-        end
-        get "properties", to: "admins#properties"
-        get "units", to: "admins#units"
-        get "tenants", to: "admins#tenants"
-        get "rent_records", to: "admins#rent_records"
-        get "maintenance_logs", to: "admins#maintenance_logs"
-        get "payments", to: "admins#payments"
-        get "subscriptions", to: "admins#subscriptions"
-        get "audit_logs", to: "admins#audit_logs"
+  namespace :admin do
+    get "dashboard", to: "admins#dashboard"
+    get "properties", to: "admins#properties"
+    get "units", to: "admins#units"
+    get "tenants", to: "admins#tenants"
+    get "rent_records", to: "admins#rent_records"
+    get "maintenance_logs", to: "admins#maintenance_logs"
+    get "payments", to: "admins#payments"
+    get "subscriptions", to: "admins#subscriptions"
+    get "audit_logs", to: "admins#audit_logs"
+    resources :users, only: [:index, :show, :update], controller: "admins" do
+      member do
+        patch :promote
+        patch :demote
+        patch :suspend
+        patch :activate
       end
     end
   end
