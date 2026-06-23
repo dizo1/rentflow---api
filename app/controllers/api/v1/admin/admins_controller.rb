@@ -200,17 +200,20 @@ class Api::V1::Admin::AdminsController < Api::V1::BaseController
       action: action_name,
       target_type: @audit_target_type || "AdminApi",
       target_id: @audit_target_id,
-      metadata: audit_metadata,
+      metadata: audit_metadata.presence || { controller: params[:controller] },
       ip_address: request.remote_ip,
       user_agent: request.user_agent
     )
+  rescue => e
+    Rails.logger.error "[AdminAuditLog] Failed to record: #{e.message}"
   end
 
   def audit_metadata
     {
-      controller: params[:controller],
-      route_params: audit_route_params
-    }
+    controller: params[:controller],
+    action: params[:action],
+    route_params: audit_route_params
+    }.compact
   end
 
   def audit_route_params
